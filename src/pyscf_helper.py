@@ -1,6 +1,6 @@
 import numpy as np
 import scipy 
-from pyscf import gto, scf, mcscf, fci, ao2mo, lo, molden, cc
+from pyscf import gto, scf, mcscf, fci, ao2mo, lo,  cc
 from pyscf.cc import ccsd
 import copy as cp
 
@@ -253,7 +253,7 @@ def init(molecule,charge,spin,basis,n_frzn_occ=0, n_act=None, mo_order=None):
 
     
     # dump orbitals for viewing 
-    molden.from_mo(mol, 'orbitals_canon.molden', C)
+    #molden.from_mo(mol, 'orbitals_canon.molden', C)
 
     ##READING INTEGRALS FROM PYSCF
     E_nuc = gto.Mole.energy_nuc(mol)
@@ -447,8 +447,8 @@ def init_pyscf(molecule,charge,spin,basis,orbitals):
     
     C = cp.deepcopy(Cl)
     # dump orbitals for viewing 
-    molden.from_mo(mol, 'orbitals_canon.molden', C)
-    molden.from_mo(mol, 'orbitals_local.molden', Cl)
+    #molden.from_mo(mol, 'orbitals_canon.molden', C)
+    #molden.from_mo(mol, 'orbitals_local.molden', Cl)
 
     ##READING INTEGRALS FROM PYSCF
     E_nu = gto.Mole.energy_nuc(mol)

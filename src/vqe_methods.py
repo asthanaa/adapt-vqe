@@ -10,7 +10,7 @@ import sys
 
 import pyscf
 from pyscf import lib
-from pyscf import gto, scf, mcscf, fci, ao2mo, lo, molden, cc
+from pyscf import gto, scf, mcscf, fci, ao2mo, lo,  cc
 from pyscf.cc import ccsd
 
 import operator_pools
@@ -34,7 +34,6 @@ def adapt_vqe(hamiltonian_op, pool, reference_ket,
     hamiltonian = openfermion.transforms.get_sparse_operator(hamiltonian_op)
     ref_energy = reference_ket.T.conj().dot(hamiltonian.dot(reference_ket))[0,0].real
     print(" Reference Energy: %12.8f" %ref_energy)
-
     #Thetas
     parameters = []
 
@@ -86,7 +85,6 @@ def adapt_vqe(hamiltonian_op, pool, reference_ket,
         max_of_gi = next_deriv
         print(" Norm of <[H,A]> = %12.8f" %curr_norm)
         print(" Max  of <[H,A]> = %12.8f" %max_of_gi)
-
         converged = False
         if adapt_conver == "norm":
             if curr_norm < adapt_thresh:
@@ -108,13 +106,16 @@ def adapt_vqe(hamiltonian_op, pool, reference_ket,
             for si in range(len(ansatz_ops)):
                 opstring = pool.get_string_for_term(ansatz_ops[si])
                 print(" %4i %12.8f %s" %(si, parameters[si], opstring) )
+                #exit()
             break
 
         print(" Add operator %4i" %next_index)
         parameters.insert(0,0)
         ansatz_ops.insert(0,pool.fermi_ops[next_index])
         ansatz_mat.insert(0,pool.spmat_ops[next_index])
-
+        #ansatz_mat gives matrix form of a^a operators acting on 4 qubits. par*ansatz_mat[i] 
+        #print('ansatz_mat',ansatz_mat[0].toarray())
+        #exit()
         trial_model = tUCCSD(hamiltonian, ansatz_mat, reference_ket, parameters)
 
 
@@ -129,7 +130,7 @@ def adapt_vqe(hamiltonian_op, pool, reference_ket,
         for si in range(len(ansatz_ops)):
             opstring = pool.get_string_for_term(ansatz_ops[si])
             print(" %4i %12.8f %s" %(si, parameters[si], opstring) )
-    return trial_model.curr_energy, curr_state, parameters
+    return trial_model.curr_energy, curr_state, parameters,ansatz_mat
 
 # }}}
 
@@ -732,7 +733,7 @@ if __name__== "__main__":
         S2 = v[:,ei].conj().T.dot(s2.dot(v[:,ei]))
         print(" State %4i: %12.8f au  <S2>: %12.8f" %(ei,e[ei]+E_nuc,S2))
     fermi_ham += FermionOperator((),E_nuc)
-    pyscf.molden.from_mo(mol, "full.molden", sq_ham.C)
+    #pyscf.molden.from_mo(mol, "full.molden", sq_ham.C)
 
     pool = operator_pools.singlet_SD()
     pool.init(n_orb, n_occ_a=n_a, n_occ_b=n_b, n_vir_a=n_orb-n_a, n_vir_b=n_orb-n_b)

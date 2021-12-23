@@ -16,7 +16,7 @@ html5lib==1.0.1
 idna==2.7
 igraph==0.1.11
 ipykernel==4.8.2
-ipython==6.5.0
+ipython
 ipython-genutils==0.2.0
 ipywidgets==7.4.0
 jedi==0.12.1
@@ -29,7 +29,7 @@ jupyter-client==5.2.3
 jupyter-console==5.2.0
 jupyter-core==4.4.0
 kiwisolver==1.0.1
-MarkupSafe==1.0
+MarkupSafe
 matplotlib==2.2.3
 mistune==0.8.3
 more-itertools==4.3.0
@@ -55,11 +55,11 @@ py==1.5.4
 pybind11==2.2.3
 Pygments==2.2.0
 pyparsing==2.2.0
-pyscf==1.6.1.post1
-pytest==3.7.1
-python-dateutil==2.7.3
-pytz==2018.5
-pyzmq==17.1.2
+pyscf
+pytest
+python-dateutil
+pytz
+pyzmq
 qtconsole==4.4.0
 requests==2.20.0
 scipy==1.1.0
