@@ -22,7 +22,7 @@ def test():
 
     charge = 0
     spin = 0
-    basis = 'sto-3g'
+    basis = 'sto3g'
 
     [n_orb, n_a, n_b, h, g, mol, E_nuc, E_scf, C, S] = pyscf_helper.init(geometry,charge,spin,basis)
 
@@ -73,8 +73,8 @@ def test():
     print(" <S^2> of final state  : %12.8f" %(v.conj().T.dot(s2.dot(v))[0,0].real))
 
     #store FCI values for checking
-    a,b=eigs(hamiltonian)
-    fci_levels=a+E_nuc
+    #a,b=eigs(hamiltonian)
+    #fci_levels=a+E_nuc
 
     #create operators single and double for each excitation
     op=qeom.createops(n_orb,n_a,n_b,n_orb-n_a,n_orb-n_b,reference_ket)
@@ -83,7 +83,7 @@ def test():
 
     #transform H with e^{sigma}
     barH=qeom.barH(params, ansatz_mat, hamiltonian)
-    print("barH, H", barH,'\n\n',hamiltonian)
+    #print("barH, H", barH,'\n\n',hamiltonian)
     #a,b=eigs(barH)
     #print('ex energy',a)
     #print('reference state',reference_ket)
@@ -94,7 +94,6 @@ def test():
     Hmat=np.zeros((len(op),len(op)))
     for i in range(len(op)):
         for j in range(len(op)):
-
             #mat=op[i].transpose().conj().dot(barH.dot(op[j]))
             mat=qeom.comm3(op[i].transpose().conj(),barH,op[j])
             #print(mat.toarray())
@@ -102,8 +101,8 @@ def test():
     
     #Diagonalize ex operator-> eigenvalues are excitation energies
     eig,aval=scipy.linalg.eig(Hmat)
-
-    print('final excitation energies',eig.real+E_nuc)
-    print('FCI excitation energies',fci_levels.real-e)
+    print('Hex',Hmat)
+    print('final excitation energies',np.sort(eig.real)+e)
+    #print('FCI excitation energies',fci_levels.real)
 if __name__== "__main__":
     test()

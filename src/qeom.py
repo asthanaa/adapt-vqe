@@ -37,36 +37,67 @@ def createops(no,nia,nib,nva,nvb,reference_ket):
             aa=nia+nib+2*j
             ab=nia+nib+2*j+1
 
-            optmp1= FermionOperator(((aa,1),(ia,0)),1.0)
-            optmp1 = normal_ordered(optmp1)
-            optmp2= FermionOperator(((ab,1),(ib,0)),1.0)
-            optmp2 = normal_ordered(optmp2)
 
+
+            optmp1= FermionOperator(((aa,1),(ia,0)),1.0/np.sqrt(2))
+            optmp1+= FermionOperator(((ab,1),(ib,0)),1.0/np.sqrt(2))
+            optmp1 = normal_ordered(optmp1)
+            optmp2= FermionOperator(((aa,1),(ia,0)),1.0/np.sqrt(2))
+            optmp2-= FermionOperator(((ab,1),(ib,0)),1.0/np.sqrt(2))
+            optmp2 = normal_ordered(optmp2)
             ops.append(optmp1)
             ops.append(optmp2)
+            optmp3= FermionOperator(((aa,1),(ib,0)),1.0)
+            optmp3 = normal_ordered(optmp3)
+            optmp4= FermionOperator(((ab,1),(ia,0)),1.0)
+            optmp4 = normal_ordered(optmp4)
+            ops.append(optmp3)
+            ops.append(optmp4)
+
+
+
+
             #termA =  FermionOperator(((aa,1),(ia,0)), 1/np.sqrt(2))
             #termA = normal_ordered(termA) 
-
+        
             #normalize?
-            for i in range(0,nia):
-                ia = 2*i
-                ib = 2*i+1
+    for i in range(0,nia):
+        ia = 2*i
+        ib = 2*i+1
 
-                for j in range(i,nia):
-                    ja = 2*j
-                    jb = 2*j+1
+        for j in range(i,nia):
+            ja = 2*j
+            jb = 2*j+1
 
-                    for a in range(0,nva):
-                        aa = nia+nib + 2*a
-                        ab = nia+nib + 2*a+1
+            for a in range(0,nva):
+                aa = nia+nib + 2*a
+                ab = nia+nib + 2*a+1
 
-                        for b in range(a,nva):
-                            ba = nia+nib + 2*b
-                            bb = nia+nib + 2*b+1
+                for b in range(a,nva):
+                    ba = nia+nib + 2*b
+                    bb = nia+nib + 2*b+1
 
-                            optmp =  FermionOperator(((aa,1),(bb,1),(ib,0),(ja,0)), 1.0)
-                            optmp = normal_ordered(optmp)
-                            ops.append(optmp)
+                    if (i==j):
+                                if (a==b):
+
+                                    optmp =  FermionOperator(((aa,1),(bb,1),(jb,0),(ia,0)), 1.0)
+                                    optmp = normal_ordered(optmp)
+                                    ops.append(optmp)
+                                else:
+                                    
+
+
+                                    optmp =  FermionOperator(((aa,1),(bb,1),(jb,0),(ia,0)), 1.0/np.sqrt(2))
+                                    optmp +=  FermionOperator(((ba,1),(ab,1),(jb,0),(ia,0)), 1.0/np.sqrt(2))
+                                    optmp = normal_ordered(optmp)
+                                    optmp =  FermionOperator(((aa,1),(bb,1),(jb,0),(ia,0)), 1.0/np.sqrt(2))
+                                    optmp -=  FermionOperator(((ba,1),(ab,1),(jb,0),(ia,0)), 1.0/np.sqrt(2))
+                                    optmp = normal_ordered(optmp)
+                                    ops.append(optmp)
+                                    '''
+                                    #optmp =  FermionOperator(((aa,1),(bb,1),(ja,0),(ib,0)), 1.0)
+                                    #optmp = normal_ordered(optmp)
+                            #ops.append(optmp)
                             if nia>1:
                                 optmp2 =  FermionOperator(((aa,1),(ba,1),(ia,0),(ja,0)), 1.0)
                                 optmp2 = normal_ordered(optmp2)
@@ -76,6 +107,7 @@ def createops(no,nia,nib,nva,nvb,reference_ket):
                                 optmp3 = normal_ordered(optmp2)
                                 ops.append(optmp3)
 
+                                    '''
     spmat_ops = []
     for item in ops:    
         spmat_ops.append(transforms.get_sparse_operator(item, n_qubits = nia+nib+nva+nvb))
