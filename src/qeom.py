@@ -26,7 +26,7 @@ def expvalue(bra,op,ket):
     """
     give expecttattion value of an operator wrt bra and ket wavefunction
     """
-    return bra.dot(op.dot(ket))
+    return bra.dot(op.dot(ket)).todense()
 def createops(no,nia,nib,nva,nvb,reference_ket):
     #single excitation
     ops=[]
@@ -123,8 +123,11 @@ def createops(no,nia,nib,nva,nvb,reference_ket):
     #print(spmat_ops)
     #exit()
     return spmat_ops
-def comm3(a,b,c):
 
+def comm3(a,b,c):
     mat=0.5*(a.dot(b.dot(c))-a.dot(c.dot(b))-b.dot(c.dot(a))+c.dot(b.dot(a)))
     mat+=0.5*(a.dot(b.dot(c))-b.dot(a.dot(c))-c.dot(a.dot(b))+c.dot(b.dot(a)))
+    return mat
+def comm2(a,b):
+    mat=a.dot(b)-b.dot(a)
     return mat
