@@ -30,37 +30,31 @@ def expvalue(bra,op,ket):
 def createops(no,nia,nib,nva,nvb,reference_ket):
     #single excitation
     ops=[]
+    singlet=1
+    triplet=1
     for i in range(nia):
         ia=2*i
         ib=2*i+1
         for j in range(nva):
             aa=nia+nib+2*j
             ab=nia+nib+2*j+1
+            if singlet:
+                optmp1= FermionOperator(((aa,1),(ia,0)),1.0/np.sqrt(2))
+                optmp1+= FermionOperator(((ab,1),(ib,0)),1.0/np.sqrt(2))
+                optmp1 = normal_ordered(optmp1)
+                ops.append(optmp1)
+                optmp3= FermionOperator(((aa,1),(ib,0)),1.0)
+                optmp3 = normal_ordered(optmp3)
+                optmp4= FermionOperator(((ab,1),(ia,0)),1.0)
+                optmp4 = normal_ordered(optmp4)
+                ops.append(optmp3)
+                ops.append(optmp4)
+            if triplet:
+                optmp2= FermionOperator(((aa,1),(ia,0)),1.0/np.sqrt(2))
+                optmp2-= FermionOperator(((ab,1),(ib,0)),1.0/np.sqrt(2))
+                optmp2 = normal_ordered(optmp2)
+                ops.append(optmp2)
 
-
-
-            optmp1= FermionOperator(((aa,1),(ia,0)),1.0/np.sqrt(2))
-            optmp1+= FermionOperator(((ab,1),(ib,0)),1.0/np.sqrt(2))
-            optmp1 = normal_ordered(optmp1)
-            optmp2= FermionOperator(((aa,1),(ia,0)),1.0/np.sqrt(2))
-            optmp2-= FermionOperator(((ab,1),(ib,0)),1.0/np.sqrt(2))
-            optmp2 = normal_ordered(optmp2)
-            ops.append(optmp1)
-            ops.append(optmp2)
-            optmp3= FermionOperator(((aa,1),(ib,0)),1.0)
-            optmp3 = normal_ordered(optmp3)
-            optmp4= FermionOperator(((ab,1),(ia,0)),1.0)
-            optmp4 = normal_ordered(optmp4)
-            ops.append(optmp3)
-            ops.append(optmp4)
-
-
-
-
-            #termA =  FermionOperator(((aa,1),(ia,0)), 1/np.sqrt(2))
-            #termA = normal_ordered(termA) 
-        
-            #normalize?
     for i in range(0,nia):
         ia = 2*i
         ib = 2*i+1
@@ -79,26 +73,38 @@ def createops(no,nia,nib,nva,nvb,reference_ket):
 
                     if (i==j):
                                 if (a==b):
-
-                                    optmp =  FermionOperator(((aa,1),(bb,1),(jb,0),(ia,0)), 1.0)
-                                    optmp = normal_ordered(optmp)
-                                    ops.append(optmp)
+                                    if singlet:
+                                        optmp =  FermionOperator(((aa,1),(bb,1),(jb,0),(ia,0)), 1.0)
+                                        optmp = normal_ordered(optmp)
+                                        ops.append(optmp)
                                 else:
-                                    
+                                    #correct tthe problem with spin adaptation here
+                                    if singlet:
+
+                                        optmp =  FermionOperator(((aa,1),(bb,1),(jb,0),(ia,0)), 1.0/np.sqrt(2))
+                                        optmp +=  FermionOperator(((ba,1),(ab,1),(jb,0),(ia,0)), 1.0/np.sqrt(2))
+                                        optmp = normal_ordered(optmp)
+                                        ops.append(optmp)
+                                        optmp =  FermionOperator(((aa,1),(ba,1),(jb,0),(ia,0)), 1.0)
+                                        optmp = normal_ordered(optmp)
+                                        ops.append(optmp)
+                                        optmp =  FermionOperator(((ab,1),(bb,1),(jb,0),(ia,0)), 1.0)
+                                        optmp = normal_ordered(optmp)
+                                        ops.append(optmp)
+                                    if triplet:
+                                        optmp =  FermionOperator(((aa,1),(bb,1),(jb,0),(ia,0)), 1.0/np.sqrt(2))
+                                        optmp -=  FermionOperator(((ba,1),(ab,1),(jb,0),(ia,0)), 1.0/np.sqrt(2))
+                                        optmp = normal_ordered(optmp)
+                                        ops.append(optmp)
 
 
-                                    optmp =  FermionOperator(((aa,1),(bb,1),(jb,0),(ia,0)), 1.0/np.sqrt(2))
-                                    optmp +=  FermionOperator(((ba,1),(ab,1),(jb,0),(ia,0)), 1.0/np.sqrt(2))
-                                    optmp = normal_ordered(optmp)
-                                    optmp =  FermionOperator(((aa,1),(bb,1),(jb,0),(ia,0)), 1.0/np.sqrt(2))
-                                    optmp -=  FermionOperator(((ba,1),(ab,1),(jb,0),(ia,0)), 1.0/np.sqrt(2))
-                                    optmp = normal_ordered(optmp)
-                                    ops.append(optmp)
+
+
                                     '''
                                     #optmp =  FermionOperator(((aa,1),(bb,1),(ja,0),(ib,0)), 1.0)
                                     #optmp = normal_ordered(optmp)
                             #ops.append(optmp)
-                            if nia>1:
+                             if nia>1:
                                 optmp2 =  FermionOperator(((aa,1),(ba,1),(ia,0),(ja,0)), 1.0)
                                 optmp2 = normal_ordered(optmp2)
                                 ops.append(optmp2)

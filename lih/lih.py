@@ -16,13 +16,13 @@ import qeom
 from scipy.sparse.linalg import eigs
 
 def test():
-    r =0.7 
-    geometry = [('H', (0,0,0)), ('H', (0,0,1*r))]
+    r =1.5
+    geometry = [('Li', (0,0,0)), ('H', (0,0,1*r))]
 
 
     charge = 0
     spin = 0
-    basis = '631g'
+    basis = 'sto3g'
 
     [n_orb, n_a, n_b, h, g, mol, E_nuc, E_scf, C, S] = pyscf_helper.init(geometry,charge,spin,basis)
 
