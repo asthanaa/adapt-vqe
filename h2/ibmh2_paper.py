@@ -23,7 +23,7 @@ def test():
 
     charge = 0
     spin = 0
-    basis = '631g'
+    basis = 'sto3g'
 
     [n_orb, n_a, n_b, h, g, mol, E_nuc, E_scf, C, S] = pyscf_helper.init(geometry,charge,spin,basis)
 
@@ -78,14 +78,12 @@ def test():
     #fci_levels=a+E_nuc
 
     #create operators single and double for each excitation
-    op=qeom.createops(n_orb,n_a,n_b,n_orb-n_a,n_orb-n_b,reference_ket)
+    op=qeom.createops_ea(n_orb,n_a,n_b,n_orb-n_a,n_orb-n_b,reference_ket)
     #print('op[0] is',op[0])
 
     #transform H with e^{sigma}
     barH=qeom.barH(params, ansatz_mat, hamiltonian)
     print('barH based energy diff=0?',qeom.expvalue(reference_ket.transpose().conj(),barH,reference_ket)[0,0].real-e+E_nuc)
-    #define iden
-    iden=np.identity(len(op)*2)
     print('len of op',len(op))
     #create deex operator
     #opt=copy.deepcopy(op)
@@ -93,8 +91,8 @@ def test():
     #    op.append(i.conj().transpose())
 
     #solve 
-
-
+    #print(v)
+    #exit()
     M=np.zeros((len(op),len(op)))
     Q=np.zeros((len(op),len(op)))
     V=np.zeros((len(op),len(op)))
@@ -104,22 +102,21 @@ def test():
     for i in range(len(op)):
         for j in range(len(op)):
             #mat=op[i].transpose().conj().dot(barH.dot(op[j]))
-
             mat1=qeom.comm3(op[i].transpose().conj(),hamiltonian,op[j])
             M[i,j]=qeom.expvalue(v.transpose().conj(),mat1,v)[0,0]
             mat2=qeom.comm3(op[i].transpose().conj(),hamiltonian,op[j].transpose().conj())
-            Q[i,j]=qeom.expvalue(v.transpose().conj(),mat2,v)[0,0]
+            Q[i,j]=-qeom.expvalue(v.transpose().conj(),mat2,v)[0,0]
             mat3=qeom.comm2(op[i].transpose().conj(),op[j])
             V[i,j]=qeom.expvalue(v.transpose().conj(),mat3,v)[0,0]
             mat4=qeom.comm2(op[i].transpose().conj(),op[j].transpose().conj())
-            W[i,j]=qeom.expvalue(v.transpose().conj(),mat4,v)[0,0]
+            W[i,j]=-qeom.expvalue(v.transpose().conj(),mat4,v)[0,0]
     Hmat=np.bmat([[M,Q],[Q.T.conj(),M.T.conj()]])
     S=np.bmat([[V,W],[-W.T.conj(),-V.T.conj()]])
     #Diagonalize ex operator-> eigenvalues are excitation energies
     eig,aval=scipy.linalg.eig(Hmat,S)
     print('W',W)
     print('final excitation energies',np.sort(eig.real)+e)
-    print('eigenvalue',aval[0])
+    print('eigenvector 1st',aval[0])
     #print('FCI excitation energies',fci_levels.real)
 if __name__== "__main__":
     test()

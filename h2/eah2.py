@@ -16,7 +16,7 @@ import qeom
 from scipy.sparse.linalg import eigs
 
 def test():
-    r =1.5
+    r =0.7 
     geometry = [('H', (0,0,0)), ('H', (0,0,1*r))]
 
 
@@ -77,7 +77,7 @@ def test():
     #fci_levels=a+E_nuc
 
     #create operators single and double for each excitation
-    op=qeom.createops_basic(n_orb,n_a,n_b,n_orb-n_a,n_orb-n_b,reference_ket)
+    op=qeom.createops_ea(n_orb,n_a,n_b,n_orb-n_a,n_orb-n_b,reference_ket)
     #print('op[0] is',op[0])
     #exit()
 
@@ -91,20 +91,17 @@ def test():
     print('barH based energy diff=0?',qeom.expvalue(reference_ket.transpose().conj(),barH,reference_ket)[0,0].real-e+E_nuc)
 
     #create ex operator
-
     Hmat=np.zeros((len(op),len(op)))
-    V=np.zeros((len(op),len(op)))
     for i in range(len(op)):
         for j in range(len(op)):
             #mat=op[i].transpose().conj().dot(barH.dot(op[j]))
             mat=qeom.comm3(op[i].transpose().conj(),barH,op[j])
             #print(mat.toarray())
             Hmat[i,j]=qeom.expvalue(reference_ket.transpose().conj(),mat,reference_ket)[0,0].real
-            mat3=qeom.comm2(op[i].transpose().conj(),op[j])
-            V[i,j]=qeom.expvalue(reference_ket.transpose().conj(),mat3,reference_ket)[0,0]
+    
     #Diagonalize ex operator-> eigenvalues are excitation energies
     eig,aval=scipy.linalg.eig(Hmat)
-    print('V',V)
+    print('Hex',Hmat)
     print('final excitation energies',np.sort(eig.real)+e)
     #print('FCI excitation energies',fci_levels.real)
     print('eigenvector',aval[0])
