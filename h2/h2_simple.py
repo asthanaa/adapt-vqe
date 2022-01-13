@@ -1,7 +1,6 @@
 import scipy
 import vqe_methods 
 import operator_pools
-import copy
 import pyscf_helper 
 
 import pyscf
@@ -17,7 +16,7 @@ import qeom
 from scipy.sparse.linalg import eigs
 
 def test():
-    r =0.7 
+    r =0.7
     geometry = [('H', (0,0,0)), ('H', (0,0,1*r))]
 
 
@@ -80,43 +79,35 @@ def test():
     #create operators single and double for each excitation
     op=qeom.createops_ip(n_orb,n_a,n_b,n_orb-n_a,n_orb-n_b,reference_ket)
     #print('op[0] is',op[0])
+    #exit()
 
     #transform H with e^{sigma}
     barH=qeom.barH(params, ansatz_mat, hamiltonian)
+    #print("barH, H", barH,'\n\n',hamiltonian)
+    #a,b=eigs(barH)
+    #print('ex energy',a)
+    #print('reference state',reference_ket)
+    #print('energy 1',qeom.expvalue(v.transpose().conj(),hamiltonian,v))
     print('barH based energy diff=0?',qeom.expvalue(reference_ket.transpose().conj(),barH,reference_ket)[0,0].real-e+E_nuc)
-    print('len of op',len(op))
-    #create deex operator
-    #opt=copy.deepcopy(op)
-    #for i in opt:
-    #    op.append(i.conj().transpose())
 
-    #solve 
-    #print(v)
-    #exit()
-    M=np.zeros((len(op),len(op)))
-    Q=np.zeros((len(op),len(op)))
+    #create ex operator
+
+    Hmat=np.zeros((len(op),len(op)))
     V=np.zeros((len(op),len(op)))
-    W=np.zeros((len(op),len(op)))
-    Hmat=np.zeros((len(op)*2,len(op)*2))
-    S=np.zeros((len(op)*2,len(op)*2))
     for i in range(len(op)):
         for j in range(len(op)):
             #mat=op[i].transpose().conj().dot(barH.dot(op[j]))
-            mat1=qeom.comm3(op[i].transpose().conj(),hamiltonian,op[j])
-            M[i,j]=qeom.expvalue(v.transpose().conj(),mat1,v)[0,0]
-            mat2=qeom.comm3(op[i].transpose().conj(),hamiltonian,op[j].transpose().conj())
-            Q[i,j]=-qeom.expvalue(v.transpose().conj(),mat2,v)[0,0]
-            mat3=qeom.comm2(op[i].transpose().conj(),op[j])
-            V[i,j]=qeom.expvalue(v.transpose().conj(),mat3,v)[0,0]
-            mat4=qeom.comm2(op[i].transpose().conj(),op[j].transpose().conj())
-            W[i,j]=-qeom.expvalue(v.transpose().conj(),mat4,v)[0,0]
-    Hmat=np.bmat([[M,Q],[Q.conj(),M.conj()]])
-    S=np.bmat([[V,W],[-W.conj(),-V.conj()]])
+            mat=qeom.expvalue(op[i].transpose().conj(),barH,op[j])
+            mat=scipy.sparse.csr_matrix(mat)
+            #print(mat.toarray())
+            Hmat[i,j]=qeom.expvalue(reference_ket.transpose().conj(),mat,reference_ket)[0,0].real
+            mat3=op[i].transpose().conj().dot(op[j].dot(barH))
+            V[i,j]=qeom.expvalue(reference_ket.transpose().conj(),mat3,reference_ket)[0,0]
     #Diagonalize ex operator-> eigenvalues are excitation energies
-    eig,aval=scipy.linalg.eig(Hmat,S)
-    print('W',W)
-    print('final excitation energies',np.sort(eig.real)+e)
-    print('eigenvector 1st',aval[0])
+    eig,aval=scipy.linalg.eig(Hmat)
+    print('V',V)
+    print('final excitation energies',np.sort(eig.real)+E_nuc)
     #print('FCI excitation energies',fci_levels.real)
+    print('eigenvector',aval[0])
 if __name__== "__main__":
     test()

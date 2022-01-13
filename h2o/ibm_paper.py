@@ -1,7 +1,6 @@
 import scipy
 import vqe_methods 
 import operator_pools
-import copy
 import pyscf_helper 
 
 import pyscf
@@ -17,15 +16,12 @@ import qeom
 from scipy.sparse.linalg import eigs
 
 def test():
-    r =0.7 
-    geometry = [('H', (0,0,0)), ('H', (0,0,1*r))]
-
+    geometry = [('O', (0,0,0)), ('H', ( 0.95700111, 0.00000,  0.00000000)), ('H', (-0.23961394, 0.00000,  0.92651836))]
 
     charge = 0
     spin = 0
     basis = 'sto3g'
-
-    [n_orb, n_a, n_b, h, g, mol, E_nuc, E_scf, C, S] = pyscf_helper.init(geometry,charge,spin,basis)
+    [n_orb, n_a, n_b, h, g, mol, E_nuc, E_scf, C, S] = pyscf_helper.init(geometry,charge,spin,basis,n_frzn_occ=1,n_act=6)
 
     print(" n_orb: %4i" %n_orb)
     print(" n_a  : %4i" %n_a)
@@ -72,27 +68,25 @@ def test():
 
     print(" Final ADAPT-VQE energy: %12.8f" %e)
     print(" <S^2> of final state  : %12.8f" %(v.conj().T.dot(s2.dot(v))[0,0].real))
-
+    #exit()
     #store FCI values for checking
     #a,b=eigs(hamiltonian)
     #fci_levels=a+E_nuc
 
     #create operators single and double for each excitation
-    op=qeom.createops_ip(n_orb,n_a,n_b,n_orb-n_a,n_orb-n_b,reference_ket)
+    op=qeom.createops_eefull(n_orb,n_a,n_b,n_orb-n_a,n_orb-n_b,reference_ket)
     #print('op[0] is',op[0])
+    #exit()
 
     #transform H with e^{sigma}
     barH=qeom.barH(params, ansatz_mat, hamiltonian)
+    #print("barH, H", barH,'\n\n',hamiltonian)
+    #a,b=eigs(barH)
+    #print('ex energy',a)
+    #print('reference state',reference_ket)
+    #print('energy 1',qeom.expvalue(v.transpose().conj(),hamiltonian,v))
     print('barH based energy diff=0?',qeom.expvalue(reference_ket.transpose().conj(),barH,reference_ket)[0,0].real-e+E_nuc)
-    print('len of op',len(op))
-    #create deex operator
-    #opt=copy.deepcopy(op)
-    #for i in opt:
-    #    op.append(i.conj().transpose())
 
-    #solve 
-    #print(v)
-    #exit()
     M=np.zeros((len(op),len(op)))
     Q=np.zeros((len(op),len(op)))
     V=np.zeros((len(op),len(op)))
@@ -114,9 +108,9 @@ def test():
     S=np.bmat([[V,W],[-W.conj(),-V.conj()]])
     #Diagonalize ex operator-> eigenvalues are excitation energies
     eig,aval=scipy.linalg.eig(Hmat,S)
-    print('W',W)
-    print('final excitation energies',np.sort(eig.real)+e)
-    print('eigenvector 1st',aval[0])
+    #print('W',W)
+    print('final excitation energies',np.sort(eig.real)*27.2114)
+    #print('eigenvector 1st',aval[0])
     #print('FCI excitation energies',fci_levels.real)
 if __name__== "__main__":
     test()

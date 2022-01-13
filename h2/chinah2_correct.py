@@ -74,7 +74,7 @@ def test():
     print(" <S^2> of final state  : %12.8f" %(v.conj().T.dot(s2.dot(v))[0,0].real))
 
     #create operators single and double for each excitation
-    op=qeom.createops_ea(n_orb,n_a,n_b,n_orb-n_a,n_orb-n_b,reference_ket)
+    op=qeom.createops_basic(n_orb,n_a,n_b,n_orb-n_a,n_orb-n_b,reference_ket)
     #print('op[0] is',op[0])
 
     #transform H with e^{sigma}
@@ -111,6 +111,8 @@ def test():
     Hmat=np.bmat([[M,Q],[Q.T.conj(),M.T.conj()]])
     S=np.bmat([[V,W],[-W.T.conj(),-V.T.conj()]])
     eig,aval=scipy.linalg.eig(Hmat,S)
+
+    print('W',W)
     print('V',V)
     print('final excitation energies',np.sort(eig.real)-E_nuc)
     print('eigenvector 1st',aval[0])

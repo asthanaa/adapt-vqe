@@ -16,7 +16,7 @@ import qeom
 from scipy.sparse.linalg import eigs
 
 def test():
-    r =1.5
+    r =0.7
     geometry = [('H', (0,0,0)), ('H', (0,0,1*r))]
 
 

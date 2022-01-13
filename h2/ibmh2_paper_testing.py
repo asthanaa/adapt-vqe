@@ -110,8 +110,8 @@ def test():
             V[i,j]=qeom.expvalue(v.transpose().conj(),mat3,v)[0,0]
             mat4=qeom.comm2(op[i].transpose().conj(),op[j].transpose().conj())
             W[i,j]=-qeom.expvalue(v.transpose().conj(),mat4,v)[0,0]
-    Hmat=np.bmat([[M,Q],[Q.conj(),M.conj()]])
-    S=np.bmat([[V,W],[-W.conj(),-V.conj()]])
+    Hmat=np.bmat([[M,Q],[Q.T.conj(),M.T.conj()]])
+    S=np.bmat([[V,W],[-W.T.conj(),-V.T.conj()]])
     #Diagonalize ex operator-> eigenvalues are excitation energies
     eig,aval=scipy.linalg.eig(Hmat,S)
     print('W',W)

@@ -78,7 +78,7 @@ def test():
     #fci_levels=a+E_nuc
 
     #create operators single and double for each excitation
-    op=qeom.createops_ip(n_orb,n_a,n_b,n_orb-n_a,n_orb-n_b,reference_ket)
+    op=qeom.createops_basic(n_orb,n_a,n_b,n_orb-n_a,n_orb-n_b,reference_ket)
     #print('op[0] is',op[0])
 
     #transform H with e^{sigma}
@@ -104,16 +104,16 @@ def test():
             #mat=op[i].transpose().conj().dot(barH.dot(op[j]))
             mat1=qeom.comm3(op[i].transpose().conj(),hamiltonian,op[j])
             M[i,j]=qeom.expvalue(v.transpose().conj(),mat1,v)[0,0]
-            mat2=qeom.comm3(op[i].transpose().conj(),hamiltonian,op[j].transpose().conj())
-            Q[i,j]=-qeom.expvalue(v.transpose().conj(),mat2,v)[0,0]
+            #mat2=qeom.comm3(op[i].transpose().conj(),hamiltonian,op[j].transpose().conj())
+            #Q[i,j]=-qeom.expvalue(v.transpose().conj(),mat2,v)[0,0]
             mat3=qeom.comm2(op[i].transpose().conj(),op[j])
             V[i,j]=qeom.expvalue(v.transpose().conj(),mat3,v)[0,0]
-            mat4=qeom.comm2(op[i].transpose().conj(),op[j].transpose().conj())
-            W[i,j]=-qeom.expvalue(v.transpose().conj(),mat4,v)[0,0]
-    Hmat=np.bmat([[M,Q],[Q.conj(),M.conj()]])
-    S=np.bmat([[V,W],[-W.conj(),-V.conj()]])
+            #mat4=qeom.comm2(op[i].transpose().conj(),op[j].transpose().conj())
+            #W[i,j]=-qeom.expvalue(v.transpose().conj(),mat4,v)[0,0]
+    #Hmat=np.bmat([[M])
+    #S=np.bmat([[V,W],[-W.T.conj(),-V.T.conj()]])
     #Diagonalize ex operator-> eigenvalues are excitation energies
-    eig,aval=scipy.linalg.eig(Hmat,S)
+    eig,aval=scipy.linalg.eig(M,V)
     print('W',W)
     print('final excitation energies',np.sort(eig.real)+e)
     print('eigenvector 1st',aval[0])
