@@ -89,20 +89,21 @@ def test():
 
     #create ex operator
 
-    M=np.zeros((len(op),len(op)))
-    V=np.zeros((len(op),len(op)))
+    Hmat=np.zeros((len(op),len(op)))
+    #V=np.zeros((len(op),len(op)))
     for i in range(len(op)):
         for j in range(len(op)):
             #mat=op[i].transpose().conj().dot(barH.dot(op[j]))
-            mat1=qeom.expvalue(op[i].transpose().conj(),hamiltonian,op[j])
-            mat1=scipy.sparse.csr_matrix(mat1)
-            M[i,j]=qeom.expvalue(v.transpose().conj(),mat1,v)[0,0]
-            mat3=op[i].transpose().conj().dot(op[j])
-            V[i,j]=qeom.expvalue(v.transpose().conj(),mat3,v)[0,0]
-    eig,aval=scipy.linalg.eig(M,V)
+            mat=qeom.comm3(op[i].transpose().conj(),barH,op[j])
+            #print(mat.toarray())
+            Hmat[i,j]=qeom.expvalue(reference_ket.transpose().conj(),mat,reference_ket)[0,0].real
+            #mat3=qeom.comm2(op[i].transpose().conj(),op[j])
+            #V[i,j]=qeom.expvalue(reference_ket.transpose().conj(),mat3,reference_ket)[0,0]
+    #Diagonalize ex operator-> eigenvalues are excitation energies
+    eig,aval=scipy.linalg.eig(Hmat)
     #print('V',V)
-    print('final excitation energies',(np.sort(eig.real)+E_nuc-e)*27.2114)
-    #print('eigenvector 1st',aval[0])
+    print('final excitation energies',np.sort(eig.real)*27.2114)
     #print('FCI excitation energies',fci_levels.real)
+    #print('eigenvector',aval[0])
 if __name__== "__main__":
     test()

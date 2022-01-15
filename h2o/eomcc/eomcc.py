@@ -17,9 +17,11 @@ mycc = cc.RCCSD(mf)
 mycc.verbose = 7
 mycc.frozen = 1
 mycc.ccsd()
-
-eS = 27.2114 * np.array(mycc.eomee_ccsd_singlet(nroots=5)[0])
+e_ip, c_ip = np.array(mycc.ipccsd(nroots=5)[0])
+print('IP',e_ip)
+exit()
+eS = 27.2114 * np.array(mycc.eomip_ccsd_singlet(nroots=5)[0])
 print(eS)
-eT = 27.2114 * np.array(mycc.eomee_ccsd_triplet(nroots=5)[0])
+eT = 27.2114 * np.array(mycc.eomip_ccsd_triplet(nroots=5)[0])
 print('S-S: ', eS)
 print('S-T: ', eT)
