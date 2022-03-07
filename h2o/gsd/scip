@@ -3594,3 +3594,16 @@ SCF Energy                                     :  -74.9629055771
  Iter:  10 Current Energy = -75.0122588154801377 Gradient Norm    4.1e-04 Gradient Max    2.5e-04
  Iter:  11 Current Energy = -75.0122588447737826 Gradient Norm    2.7e-04 Gradient Max    1.3e-04
  Iter:  12 Current Energy = -75.0122588599167983 Gradient Norm    1.1e-04 Gradient Max    6.0e-05
+ Iter:  13 Current Energy = -75.0122588644744042 Gradient Norm    9.2e-05 Gradient Max    5.6e-05
+ Iter:  14 Current Energy = -75.0122588716041747 Gradient Norm    7.9e-05 Gradient Max    5.4e-05
+ Iter:  15 Current Energy = -75.0122588850559850 Gradient Norm    8.5e-05 Gradient Max    4.9e-05
+ Iter:  16 Current Energy = -75.0122589097184118 Gradient Norm    1.0e-04 Gradient Max    7.5e-05
+ Iter:  17 Current Energy = -75.0122589491861902 Gradient Norm    1.1e-04 Gradient Max    5.3e-05
+ Iter:  18 Current Energy = -75.0122589725421420 Gradient Norm    1.2e-04 Gradient Max    1.0e-04
+ Iter:  19 Current Energy = -75.0122589744043751 Gradient Norm    7.7e-05 Gradient Max    5.4e-05
+ Iter:  20 Current Energy = -75.0122589757752394 Gradient Norm    2.1e-05 Gradient Max    1.6e-05
+ Iter:  21 Current Energy = -75.0122589758376961 Gradient Norm    1.5e-05 Gradient Max    1.2e-05
+ Iter:  22 Current Energy = -75.0122589758875904 Gradient Norm    2.2e-06 Gradient Max    1.8e-06
+ Iter:  23 Current Energy = -75.0122589758886562 Gradient Norm    7.4e-07 Gradient Max    5.1e-07
+ Iter:  24 Current Energy = -75.0122589758887983 Gradient Norm    1.7e-07 Gradient Max    9.1e-08
+ Iter:  25 Current Energy = -75.0122589758888267 Gradient Norm    1.5e-07 Gradient Max    8.0e-08
