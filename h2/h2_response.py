@@ -14,6 +14,7 @@ from tVQE import *
 
 import qeom
 from scipy.sparse.linalg import eigs
+from scipy import linalg
 
 def test():
     r =0.7
@@ -31,7 +32,6 @@ def test():
     print(" n_b  : %4i" %n_b)
 
     sq_ham = pyscf_helper.SQ_Hamiltonian()
-
     sq_ham.init(h, g, C, S)
     print(" HF Energy: %12.8f" %(E_nuc + sq_ham.energy_of_determinant(range(n_a),range(n_b))))
     #ehf = E_nuc + sq_ham.energy_of_determinant(range(n_a),range(n_b))
@@ -100,13 +100,73 @@ def test():
             mat=qeom.comm3(op[i].transpose().conj(),barH,op[j])
             #print(mat.toarray())
             Hmat[i,j]=qeom.expvalue(reference_ket.transpose().conj(),mat,reference_ket)[0,0].real
-            mat3=qeom.comm2(op[i].transpose().conj(),op[j])
-            V[i,j]=qeom.expvalue(reference_ket.transpose().conj(),mat3,reference_ket)[0,0]
+            #mat3=qeom.comm2(op[i].transpose().conj(),op[j])
+            #V[i,j]=qeom.expvalue(reference_ket.transpose().conj(),mat3,reference_ket)[0,0]
     #Diagonalize ex operator-> eigenvalues are excitation energies
     eig,aval=scipy.linalg.eig(Hmat)
-    print('V',V)
-    print('final excitation energies',np.sort(eig.real)+e)
-    #print('FCI excitation energies',fci_levels.real)
-    print('eigenvector',aval[0])
+    ex_energies =  27.2114 * np.sort(eig.real)
+    ex_energies = np.array([i for i in ex_energies if i >0])
+    print('final excitation energies (adapt in qiskit ordering) in eV: ', ex_energies)
+    final_total_energies = np.sort(eig.real)+e
+    print('final total energies (adapt in qiskit ordering)', final_total_energies)
+
+
+    # Response part now!
+    # (A- wI)X = b
+    omega = 0.077357
+    identity = np.eye(len(op))
+    H_response = Hmat - omega * identity
+    # reading dipole intehgrals
+    dipole_ao = mol.intor('int1e_r_sph')
+    print('dipole (ao): ', dipole_ao) 
+    dipole_mo = []
+    # convert from AO to MO basis
+    for i in range(3):
+        dipole_mo.append(np.einsum("pu,uv,vq->pq", C.T, dipole_ao[i], C))
+    print('dipole (mo): ', dipole_mo) 
+
+    fermi_dipole_mo_op = []
+    shift = 0
+    for i in range(3):
+        fermi_op = openfermion.FermionOperator()
+        #H
+        for p in range(dipole_mo[0].shape[0]):
+            pa = 2*p + shift
+            pb = 2*p+1 +  shift
+            for q in range(dipole_mo[0].shape[1]):
+                qa = 2*q +shift
+                qb = 2*q+1 +shift
+                fermi_op += openfermion.FermionOperator(((pa,1),(qa,0)), dipole_mo[i][p,q])
+                fermi_op += openfermion.FermionOperator(((pb,1),(qb,0)), dipole_mo[i][p,q])
+        fermi_dipole_mo_op.append(openfermion.transforms.get_sparse_operator(fermi_op))  
+
+    print('fermi_dipole_mo_op: ', fermi_dipole_mo_op)
+    bar_dipole_mo = []
+    print('params: ', params)
+    print('ansatz_mat: ', ansatz_mat)
+    for i in range(3):
+        is_all_zero = np.all((dipole_mo[i] == 0))
+        if is_all_zero:
+            print('Array contains only 0')
+            bar_dipole_mo.append([])
+        else:
+            bar_dipole_mo.append(qeom.barH(params, ansatz_mat, fermi_dipole_mo_op[i]))
+    #print('bar_dipole_mo: ', bar_dipole_mo[2].toarray())
+
+    final_rhs = np.zeros((len(op)))
+    for i in range(len(op)):
+        #mat=qeom.comm2(op[i].transpose().conj(),bar_dipole_mo[2])
+        mat = op[i].transpose().conj().dot(bar_dipole_mo[2])
+        final_rhs[i]=qeom.expvalue(reference_ket.transpose().conj(),mat,reference_ket)[0,0].real
+
+    print('final_rhs: ', final_rhs)
+    response_z = linalg.solve(H_response, final_rhs) 
+    print('z amplitudes: ', response_z)
+    
+    # construct the linear response function now!
+    # <0|[A_bar, X(B)]|0>
+    polar2 = 2.0 * np.einsum("ia,ia->", self.ccpert_A.build_Aov(), self.x1_B) 
+
+
 if __name__== "__main__":
     test()
