@@ -24,6 +24,7 @@ def test():
     charge = 0
     spin = 0
     basis = '6-31g'
+    #basis = 'sto-3g'
 
     [n_orb, n_a, n_b, h, g, mol, E_nuc, E_scf, C, S] = pyscf_helper.init(geometry,charge,spin,basis)
 
@@ -77,7 +78,7 @@ def test():
     #fci_levels=a+E_nuc
 
     #create operators single and double for each excitation
-    op=qeom.createops_basic(n_orb,n_a,n_b,n_orb-n_a,n_orb-n_b,reference_ket)
+    op=qeom.createops_eefull(n_orb,n_a,n_b,n_orb-n_a,n_orb-n_b,reference_ket)
     #print('op[0] is',op[0])
     #exit()
 
@@ -112,11 +113,26 @@ def test():
 
 
     # Response part now!
+
     # (A- wI)X = b
+    # < mu | e^(-sigma) A e^(sigma) | 0 > + 
+    # < mu | [e^(-sigma) H e^(sigma), E_nu] | 0 > * sigma^(1)_nu -
+    # omega * sigma^(1)_mu
+
+    # linear response function!
+    # < 0 | [e^(-sigma) A e^(sigma), E_mu] | 0 > * sigma^(1)_mu (B)
+
+    Hmat_res=np.zeros((len(op),len(op)))
+    for i in range(len(op)):
+        for j in range(len(op)):
+            mat= op[i].transpose().conj().dot(qeom.comm2(barH, op[j]))
+            Hmat_res[i,j]=qeom.expvalue(reference_ket.transpose().conj(),mat,reference_ket)[0,0].real
+
     omega = 0.077357
     identity = np.eye(len(op))
-    H_response = Hmat - omega * identity
-    # reading dipole intehgrals
+    H_response=np.zeros((len(op),len(op)))
+    H_response = Hmat_res - omega * identity
+    # reading dipole integrals
     dipole_ao = mol.intor('int1e_r_sph')
     print('dipole (ao): ', dipole_ao) 
     dipole_mo = []
@@ -153,20 +169,33 @@ def test():
             bar_dipole_mo.append(qeom.barH(params, ansatz_mat, fermi_dipole_mo_op[i]))
     #print('bar_dipole_mo: ', bar_dipole_mo[2].toarray())
 
+    # < mu | e^(-sigma) A e^(sigma) | 0 >
     final_rhs = np.zeros((len(op)))
     for i in range(len(op)):
-        #mat=qeom.comm2(op[i].transpose().conj(),bar_dipole_mo[2])
         mat = op[i].transpose().conj().dot(bar_dipole_mo[2])
-        final_rhs[i]=qeom.expvalue(reference_ket.transpose().conj(),mat,reference_ket)[0,0].real
+        final_rhs[i]= -1.0 * qeom.expvalue(reference_ket.transpose().conj(),mat,reference_ket)[0,0].real
+
+    print('len(op), :', len(op)) 
+    # < mu | e^(-sigma) H e^(sigma) | 0 > should be zero for exact wavefunction!
+    for i in range(len(op)):
+        mat =  op[i].transpose().conj().dot(barH)
+        val=qeom.expvalue(reference_ket.transpose().conj(),mat,reference_ket)[0,0].real
+        print('val: ', val)
+
 
     print('final_rhs: ', final_rhs)
     response_z = linalg.solve(H_response, final_rhs) 
     print('z amplitudes: ', response_z)
     
     # construct the linear response function now!
-    # <0|[A_bar, X(B)]|0>
-    polar2 = 2.0 * np.einsum("ia,ia->", self.ccpert_A.build_Aov(), self.x1_B) 
+    # < 0 | [e^(-sigma) A e^(sigma), E_mu] | 0 > * sigma^(1)_mu (B)
+    polar = 0
+    for i in range(len(op)):
+        mat = qeom.comm2(bar_dipole_mo[2], op[i])
+        polar += qeom.expvalue(reference_ket.transpose().conj(),mat,reference_ket)[0,0].real * response_z[i]
 
+    print('polar: ', polar)
+    
 
 if __name__== "__main__":
     test()
