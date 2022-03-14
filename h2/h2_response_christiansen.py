@@ -23,8 +23,8 @@ def test():
 
     charge = 0
     spin = 0
-    #basis = '6-31g'
-    basis = 'sto-3g'
+    basis = '6-31g'
+    #basis = 'sto-3g'
 
     [n_orb, n_a, n_b, h, g, mol, E_nuc, E_scf, C, S] = pyscf_helper.init(geometry,charge,spin,basis)
 
@@ -64,7 +64,7 @@ def test():
     #pyscf.molden.from_mo(mol, "full.molden", sq_ham.C)
 
     #   Francesco, change this to singlet_GSD() if you want generalized singles and doubles
-    pool = operator_pools.singlet_SD()
+    pool = operator_pools.singlet_GSD()
     pool.init(n_orb, n_occ_a=n_a, n_occ_b=n_b, n_vir_a=n_orb-n_a, n_vir_b=n_orb-n_b)
     for i in range(pool.n_ops):
         print(pool.get_string_for_term(pool.fermi_ops[i]))
@@ -112,7 +112,11 @@ def test():
     print('final total energies (adapt in qiskit ordering)', final_total_energies)
 
 
+
+    
     # Response part now!
+
+    '''
 
     # (A- wI)X = b
     # < mu | e^(-sigma) A e^(sigma) | 0 > + 
@@ -133,7 +137,6 @@ def test():
     H_response=np.zeros((len(op),len(op)))
     #H_response = Hmat_res - omega * identity
     H_response = Hmat - omega * identity
-    #H_response -=  e * identity
     # reading dipole integrals
     dipole_ao = mol.intor('int1e_r_sph')
     print('dipole (ao): ', dipole_ao) 
@@ -171,31 +174,116 @@ def test():
             bar_dipole_mo.append(qeom.barH(params, ansatz_mat, fermi_dipole_mo_op[i]))
     #print('bar_dipole_mo: ', bar_dipole_mo[2].toarray())
 
-    # < UCC | [Y, Qi] | UCC > --> < HF | [Ybar, Qi] | HF >
+    # < mu | e^(-sigma) A e^(sigma) | 0 >
     final_rhs = np.zeros((len(op)))
     for i in range(len(op)):
-        mat = qeom.comm2(bar_dipole_mo[2], op[i])
-        final_rhs[i]= qeom.expvalue(reference_ket.transpose().conj(),mat,reference_ket)[0,0].real
-        
+        mat = op[i].transpose().conj().dot(bar_dipole_mo[2])
+        final_rhs[i]= -1.0 * qeom.expvalue(reference_ket.transpose().conj(),mat,reference_ket)[0,0].real
 
-    '''
     print('len(op), :', len(op)) 
     # < mu | e^(-sigma) H e^(sigma) | 0 > should be zero for exact wavefunction!
     for i in range(len(op)):
         mat =  op[i].transpose().conj().dot(barH)
         val=qeom.expvalue(reference_ket.transpose().conj(),mat,reference_ket)[0,0].real
         print('val: ', val)
-    '''
 
-    # \eta_i
+
     print('final_rhs: ', final_rhs)
-    # solve for \lambda_i
     response_z = linalg.solve(H_response, final_rhs) 
     print('z amplitudes: ', response_z)
-   
-    # 2.0 * \eta_i * \lambda_i 
-    polar = 2.0 * response_z.dot(final_rhs)
+    
+    # construct the linear response function now!
+    # < 0 | [e^(-sigma) A e^(sigma), E_mu] | 0 > * sigma^(1)_mu (B)
+    polar = 0
+    for i in range(len(op)):
+        mat = qeom.comm2(bar_dipole_mo[2], op[i])
+        polar += qeom.expvalue(reference_ket.transpose().conj(),mat,reference_ket)[0,0].real * response_z[i]
+
     print('polar: ', polar)
+    '''
+
+    # Christiansen's paper!
+    # lets first do this using the q-eom approach first 
+    # and then with the Ayush's approach later!
+    
+    M=np.zeros((len(op),len(op)))
+    Q=np.zeros((len(op),len(op)))
+    V=np.zeros((len(op),len(op)))
+    W=np.zeros((len(op),len(op)))
+    Hmat=np.zeros((len(op)*2,len(op)*2))
+    S=np.zeros((len(op)*2,len(op)*2))
+    for i in range(len(op)):
+        for j in range(len(op)):
+            mat1=qeom.comm3(op[i],hamiltonian,op[j].transpose().conj())
+            M[i,j]=qeom.expvalue(v.transpose().conj(),mat1,v)[0,0]
+            mat2=qeom.comm3(op[i],hamiltonian,op[j])
+            Q[i,j]=-qeom.expvalue(v.transpose().conj(),mat2,v)[0,0]
+            mat3=qeom.comm2(op[i],op[j].transpose().conj())
+            V[i,j]=qeom.expvalue(v.transpose().conj(),mat3,v)[0,0]
+            mat4=qeom.comm2(op[i],op[j])
+            W[i,j]=-qeom.expvalue(v.transpose().conj(),mat4,v)[0,0]
+    Hmat=np.bmat([[M,Q],[Q.conj(),M.conj()]])
+    S=np.bmat([[V,W],[-W.conj(),-V.conj()]])
+
+    omega = 0.077357
+
+    # LHS Matrix 
+
+    Hmat_res = Hmat - omega * S
+
+    # RHS vector
+
+    rhs_vec = np.zeros((2 * len(op)))
+
+    # reading dipole integrals
+    dipole_ao = mol.intor('int1e_r_sph')
+    print('dipole (ao): ', dipole_ao) 
+    dipole_mo = []
+    # convert from AO to MO basis
+    for i in range(3):
+        dipole_mo.append(np.einsum("pu,uv,vq->pq", C.T, dipole_ao[i], C))
+    print('dipole (mo): ', dipole_mo) 
+
+    fermi_dipole_mo_op = []
+    shift = 0
+    for i in range(3):
+        fermi_op = openfermion.FermionOperator()
+        #H
+        for p in range(dipole_mo[0].shape[0]):
+            pa = 2*p + shift
+            pb = 2*p+1 +  shift
+            for q in range(dipole_mo[0].shape[1]):
+                qa = 2*q +shift
+                qb = 2*q+1 +shift
+                fermi_op += openfermion.FermionOperator(((pa,1),(qa,0)), dipole_mo[i][p,q])
+                fermi_op += openfermion.FermionOperator(((pb,1),(qb,0)), dipole_mo[i][p,q])
+        fermi_dipole_mo_op.append(openfermion.transforms.get_sparse_operator(fermi_op))  
+
+    print('fermi_dipole_mo_op: ', fermi_dipole_mo_op)
+    dip_up = np.zeros((len(op)))
+    dip_down = np.zeros((len(op)))
+
+    for i in range(len(op)):
+        mat1=qeom.comm2(fermi_dipole_mo_op[2],op[i].transpose().conj())
+        dip_up[i]=qeom.expvalue(v.transpose().conj(),mat1,v)[0,0]
+        mat2=qeom.comm2(fermi_dipole_mo_op[2],op[i])
+        dip_down[i]=-1.0*qeom.expvalue(v.transpose().conj(),mat2,v)[0,0]
+    
+    for i in range(2 * len(op)):
+        if i < len(op):
+            rhs_vec[i] = dip_up[i]
+        else:
+            rhs_vec[i] = dip_down[i-len(op)]
+
+    response_z = linalg.solve(Hmat_res, rhs_vec) 
+    print('z amplitudes: ', response_z)
+    print('rhs_vec: ', rhs_vec)
+
+
+    # polarizability now!
+    polar = rhs_vec.dot(response_z)
+    print('polarizability (ZZ): ', polar)
+            
     
 
 if __name__== "__main__":
