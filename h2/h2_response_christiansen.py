@@ -23,8 +23,8 @@ def test():
 
     charge = 0
     spin = 0
-    basis = '6-31g'
-    #basis = 'sto-3g'
+    #basis = '6-31g'
+    basis = 'sto-3g'
 
     [n_orb, n_a, n_b, h, g, mol, E_nuc, E_scf, C, S] = pyscf_helper.init(geometry,charge,spin,basis)
 
@@ -222,18 +222,18 @@ def test():
             V[i,j]=qeom.expvalue(v.transpose().conj(),mat3,v)[0,0]
             mat4=qeom.comm2(op[i],op[j])
             W[i,j]=-qeom.expvalue(v.transpose().conj(),mat4,v)[0,0]
+
     Hmat=np.bmat([[M,Q],[Q.conj(),M.conj()]])
     S=np.bmat([[V,W],[-W.conj(),-V.conj()]])
+
+    #Hmat=np.bmat([[M,Q],[Q.transpose().conj(),M.transpose().conj()]])
+    #S=np.bmat([[V,W],[-W.transpose().conj(),-V.transpose().conj()]])
 
     omega = 0.077357
 
     # LHS Matrix 
 
     Hmat_res = Hmat - omega * S
-
-    # RHS vector
-
-    rhs_vec = np.zeros((2 * len(op)))
 
     # reading dipole integrals
     dipole_ao = mol.intor('int1e_r_sph')
@@ -260,31 +260,45 @@ def test():
         fermi_dipole_mo_op.append(openfermion.transforms.get_sparse_operator(fermi_op))  
 
     print('fermi_dipole_mo_op: ', fermi_dipole_mo_op)
-    dip_up = np.zeros((len(op)))
-    dip_down = np.zeros((len(op)))
+   
+    response_amp_xyz = [] 
+    rhs_vec_xyz = []
+    for x in range(3):
+        dip_up = np.zeros((len(op)))
+        dip_down = np.zeros((len(op)))
+        rhs_vec = np.zeros((2 * len(op)))
+        shape0 = fermi_dipole_mo_op[x].shape[0] 
+        is_all_zero = True
+        if shape0 > 1:
+            is_all_zero = False
+        for i in range(len(op)):
+            if not is_all_zero:
+                mat1=qeom.comm2(fermi_dipole_mo_op[x],op[i])
+                dip_up[i]=qeom.expvalue(v.transpose().conj(),mat1,v)[0,0]
+                mat2=qeom.comm2(fermi_dipole_mo_op[x],op[i].transpose().conj())
+                dip_down[i]=-1.0 * qeom.expvalue(v.transpose().conj(),mat2,v)[0,0]
+                #dip_down[i]=qeom.expvalue(v.transpose().conj(),mat2,v)[0,0]
+        for i in range(2 * len(op)):
+            if i < len(op):
+                rhs_vec[i] = dip_up[i]
+            else:
+                rhs_vec[i] = dip_down[i-len(op)]
 
-    for i in range(len(op)):
-        mat1=qeom.comm2(fermi_dipole_mo_op[2],op[i].transpose().conj())
-        dip_up[i]=qeom.expvalue(v.transpose().conj(),mat1,v)[0,0]
-        mat2=qeom.comm2(fermi_dipole_mo_op[2],op[i])
-        dip_down[i]=-1.0*qeom.expvalue(v.transpose().conj(),mat2,v)[0,0]
-    
-    for i in range(2 * len(op)):
-        if i < len(op):
-            rhs_vec[i] = dip_up[i]
-        else:
-            rhs_vec[i] = dip_down[i-len(op)]
-
-    response_z = linalg.solve(Hmat_res, rhs_vec) 
-    print('z amplitudes: ', response_z)
-    print('rhs_vec: ', rhs_vec)
+        rhs_vec_xyz.append(rhs_vec)
+        response_amp_xyz.append(linalg.solve(Hmat_res, rhs_vec))
 
 
-    # polarizability now!
-    polar = rhs_vec.dot(response_z)
-    print('polarizability (ZZ): ', polar)
-            
-    
+    cart = ['X', 'Y', 'Z']   
+    polar = {}
+    for x in range(3):
+        for y in range(3):
+            key = cart[x] + cart[y]
+            polar[key] = rhs_vec_xyz[x].dot(response_amp_xyz[y])
+
+    print('polarizability: ', polar)
+
+    print('rhs_vec_xyz[z]: ', rhs_vec_xyz[2])
+    print('response_amp_xyz[z]: ', response_amp_xyz[2])
 
 if __name__== "__main__":
     test()
