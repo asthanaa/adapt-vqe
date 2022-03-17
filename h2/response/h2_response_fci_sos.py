@@ -66,6 +66,7 @@ def test():
     ex_states = np.zeros((16))
     for state in index_states:
         ex_states[state] = e[state]-e[0]
+    print('ex_states', ex_states)
 
      
     # reading dipole integrals
@@ -109,13 +110,14 @@ def test():
                 polar[key] = [0.0]
             else:
                 for state in index_states:
-                    term = v[0].transpose().conj().dot(fermi_dipole_mo_op[x].dot(v[state])).real
-                    term = v[0].transpose().conj().dot(fermi_dipole_mo_op[y].dot(v[state])).real
+                    term =   v[:,0].transpose().conj().dot(fermi_dipole_mo_op[x].dot(v[:,state])).real
+                    term *=  v[:,0].transpose().conj().dot(fermi_dipole_mo_op[y].dot(v[:,state])).real
                     term *= 2 * omega
                     term *= 1.0/( omega**2 - ex_states[state]**2)
                     print(term) 
                     polar[key].append(term)
-            #polar[key] = sum(polar[key])
+            polar[key] = sum(polar[key])
+
 
     print('polarizability: ', polar)
 
