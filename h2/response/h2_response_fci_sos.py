@@ -56,13 +56,26 @@ def test():
 
     reference_ket = scipy.sparse.csc_matrix(openfermion.jw_configuration_state(occupied_list, 2*n_orb)).transpose()
 
-    
+    shift = 0
+    number_op = openfermion.FermionOperator()
+    number_vec = np.ones(n_orb)
+    for p in range(n_orb):
+        pa = 2*p + shift
+        pb = 2*p+1 +  shift
+        number_op += openfermion.FermionOperator(((pa,1),(pa,0)), number_vec[p])
+        number_op += openfermion.FermionOperator(((pb,1),(pb,0)), number_vec[p])
+    number_op = openfermion.transforms.get_sparse_operator(number_op)
+   
+    index_states = [] 
     [e,v] = scipy.sparse.linalg.eigsh(hamiltonian_arr,16,which='SA',v0=reference_ket.todense())
     for ei in range(len(e)):
         S2 = v[:,ei].conj().T.dot(s2.dot(v[:,ei]))
+        number = v[:,ei].conj().T.dot(number_op.dot(v[:,ei]))
+        if np.round(number.real, 6) == 2 and ei !=0:
+            index_states.append(ei) 
         print(" State %4i: %12.8f au  <S2>: %12.8f" %(ei,e[ei]+E_nuc,S2))
-    
-    index_states = [3,4,5,8,13]
+
+    print('index_states: ', index_states)
     ex_states = np.zeros((16))
     for state in index_states:
         ex_states[state] = e[state]-e[0]
@@ -97,9 +110,9 @@ def test():
         else:
             fermi_dipole_mo_op.append([])
     print('fermi_dipole_mo_op: ', fermi_dipole_mo_op)
-   
+
     omega = 0.077357 
-    # resp_state[i] = 2 * omega * < 0 | X | i > < 0 | Y | i > / (omega^2 - omega_i^2)
+    # resp_state[i] = sum_i 2 * omega * < 0 | X | i > < 0 | Y | i > / (omega^2 - omega_i^2)
     cart = ['X', 'Y', 'Z']
     polar = {}
     for x in range(3):
@@ -110,13 +123,19 @@ def test():
                 polar[key] = [0.0]
             else:
                 for state in index_states:
-                    term =   v[:,0].transpose().conj().dot(fermi_dipole_mo_op[x].dot(v[:,state])).real
-                    term *=  v[:,0].transpose().conj().dot(fermi_dipole_mo_op[y].dot(v[:,state])).real
-                    term *= 2 * omega
-                    term *= 1.0/( omega**2 - ex_states[state]**2)
+                    term1  =  v[:,0].transpose().conj().dot(fermi_dipole_mo_op[x].dot(v[:,state]))
+                    term1 *= v[:,state].transpose().conj().dot(fermi_dipole_mo_op[y].dot(v[:,0]))
+                    term1 *= (1/(omega - ex_states[state]))
+
+                    term2  =  v[:,0].transpose().conj().dot(fermi_dipole_mo_op[y].dot(v[:,state]))
+                    term2 *= v[:,state].transpose().conj().dot(fermi_dipole_mo_op[x].dot(v[:,0]))
+                    term2 *= (1/(omega + ex_states[state]))
+
+                    term = term1 - term2
                     print(term) 
                     polar[key].append(term)
-            polar[key] = sum(polar[key])
+
+            polar[key] = sum(polar[key]).real
 
 
     print('polarizability: ', polar)
