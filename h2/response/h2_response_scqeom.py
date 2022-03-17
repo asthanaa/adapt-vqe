@@ -17,8 +17,14 @@ from scipy.sparse.linalg import eigs
 from scipy import linalg
 
 def test():
-    r =0.7
-    geometry = [('H', (0,0,0)), ('H', (0,0,1*r))]
+    #r =0.7
+    #geometry = [('H', (0,0,0)), ('H', (0,0,1*r))]
+    geometry = '''
+               H
+               H 1 {0}
+               H 1 {1} 2 {2}
+               H 3 {0} 1 {2} 2 {3}
+               '''.format(0.75, 1.5, 90.0, 60.0)
 
 
     charge = 0
@@ -155,22 +161,40 @@ def test():
     #print('bar_dipole_mo: ', bar_dipole_mo[2].toarray())
 
     # < UCC | [Y, Qi] | UCC > --> < HF | [Ybar, Qi] | HF >
-    final_rhs = np.zeros((len(op)))
-    for i in range(len(op)):
-        mat = qeom.comm2(bar_dipole_mo[2], op[i])
-        final_rhs[i]= qeom.expvalue(reference_ket.transpose().conj(),mat,reference_ket)[0,0].real
-       
+    rhs_vec_xyz = []
+    x_plus_x_dag_xyz = []
+
     # one equation rather than two
     # (Hmat^2 - omega^2*I)(x - x^dag) = rhs
     Hmat_sq = Hmat.dot(Hmat)
     omega_sq = omega * omega
     Hmat_sq -= omega_sq * identity
-    final_rhs_one = 2*omega*final_rhs
-    x_minux_x_dag = linalg.solve(Hmat_sq, final_rhs_one) 
-    # x + xdag = Hmat * (x - xdag)/omega
-    x_plus_x_dag = Hmat.dot(x_minux_x_dag)/omega
-    polar = final_rhs.dot(x_plus_x_dag)
-    print('polar: ', polar)
+    
+    for x in range(3):
+        final_rhs = np.zeros((len(op)))
+        if not isinstance(bar_dipole_mo[x], list):
+            for i in range(len(op)):
+                mat = qeom.comm2(bar_dipole_mo[x], op[i])
+                final_rhs[i]= qeom.expvalue(reference_ket.transpose().conj(),mat,reference_ket)[0,0].real
+        rhs_vec_xyz.append(final_rhs)
+        final_rhs_one = 2*omega*final_rhs
+        x_minux_x_dag = linalg.solve(Hmat_sq, final_rhs_one) 
+        # x + xdag = Hmat * (x - xdag)/omega
+        x_plus_x_dag = Hmat.dot(x_minux_x_dag)/omega
+        x_plus_x_dag_xyz.append(x_plus_x_dag)
+
+
+    cart = ['X', 'Y', 'Z']
+    polar = {}
+    for x in range(3):
+        for y in range(3):
+            key = cart[x] + cart[y]
+            polar[key] = rhs_vec_xyz[x].dot(x_plus_x_dag_xyz[y])
+
+    print('polarizability: ', polar)
+
+    #polar = final_rhs.dot(x_plus_x_dag)
+    #print('polar: ', polar)
 
 
 if __name__== "__main__":

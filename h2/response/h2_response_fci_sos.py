@@ -16,15 +16,25 @@ import qeom
 from scipy.sparse.linalg import eigs
 from scipy import linalg
 
-def test():
-    r =0.7
-    geometry = [('H', (0,0,0)), ('H', (0,0,1*r))]
-
-
+def test(prop_list):
+    #r =0.7
+    #geometry = [('H', (0,0,0)), ('H', (0,0,1*r))]
+    #geometry = '''
+    #           H
+    #           H 1 {0}
+    #           H 1 {1} 2 {2}
+    #           H 3 {0} 1 {2} 2 {3}
+    #           '''.format(0.75, 1.5, 90.0, 60.0)
+    geometry = '''
+     H            0.000000000000    -0.750000000000    -0.324759526419
+     H           -0.375000000000    -0.750000000000     0.324759526419 
+     H            0.000000000000     0.750000000000    -0.324759526419 
+     H            0.375000000000     0.750000000000     0.324759526419 
+     '''
     charge = 0
     spin = 0
-    basis = '6-31g'
-    #basis = 'sto-3g'
+    #basis = '6-31g'
+    basis = 'sto-3g'
 
     [n_orb, n_a, n_b, h, g, mol, E_nuc, E_scf, C, S] = pyscf_helper.init(geometry,charge,spin,basis)
 
@@ -72,9 +82,9 @@ def test():
     for ei in range(len(e)):
         S2 = v[:,ei].conj().T.dot(s2.dot(v[:,ei]))
         number = v[:,ei].conj().T.dot(number_op.dot(v[:,ei]))
-        if np.round(number.real, 6) == 2 and ei !=0:
+        if np.round(number.real, 6) == n_a + n_b and ei !=0:
             index_states.append(ei) 
-        print(" State %4i: %12.8f au  <S2>: %12.8f" %(ei,e[ei]+E_nuc,S2))
+            print(" State %4i: %12.8f au  <S2>: %12.8f" %(ei,e[ei]+E_nuc,S2))
 
     print('index_states: ', index_states)
     ex_states = np.zeros((num_states))
@@ -83,7 +93,7 @@ def test():
     print('ex_states', ex_states)
 
      
-    # reading dipole integrals
+    # reading electric dipole integrals
     dipole_ao = mol.intor('int1e_r_sph')
     print('dipole (ao): ', dipole_ao)
     dipole_mo = []
@@ -111,6 +121,37 @@ def test():
         else:
             fermi_dipole_mo_op.append([])
     print('fermi_dipole_mo_op: ', fermi_dipole_mo_op)
+
+    if 'optrot' in prop_list:
+        # make angular momentum integrals!
+        # reading electric dipole integrals
+        angmom_ao = mol.intor('int1e_cg_irxp')
+        print('angmom (ao): ', angmom_ao)
+        angmom_mo = []
+        # convert from AO to MO basis
+        for i in range(3):
+            angmom_mo.append(-0.5*np.einsum("pu,uv,vq->pq", C.T, angmom_ao[i], C))
+            print('angmom (mo): ', angmom_mo[i])
+
+        fermi_angmom_mo_op = []
+        shift = 0
+        for i in range(3):
+            fermi_op = openfermion.FermionOperator()
+            is_all_zero = np.all((angmom_mo[i] == 0)) 
+            if not is_all_zero:
+                #MU
+                for p in range(angmom_mo[0].shape[0]):
+                    pa = 2*p + shift
+                    pb = 2*p+1 +  shift
+                    for q in range(angmom_mo[0].shape[1]):
+                        qa = 2*q +shift
+                        qb = 2*q+1 +shift
+                        fermi_op += openfermion.FermionOperator(((pa,1),(qa,0)), angmom_mo[i][p,q])
+                        fermi_op += openfermion.FermionOperator(((pb,1),(qb,0)), angmom_mo[i][p,q])
+                fermi_angmom_mo_op.append(openfermion.transforms.get_sparse_operator(fermi_op))
+            else:
+                fermi_angmom_mo_op.append([])
+        #print('fermi_angmom_mo_op: ', fermi_angmom_mo_op)
 
     omega = 0.077357 
     # resp_state[i] = sum_i 2 * omega * < 0 | X | i > < 0 | Y | i > / (omega^2 - omega_i^2)
@@ -142,4 +183,4 @@ def test():
     print('polarizability: ', polar)
 
 if __name__== "__main__":
-    test()
+    test(['polar', 'optrot'])
