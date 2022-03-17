@@ -23,8 +23,8 @@ def test():
 
     charge = 0
     spin = 0
-    #basis = '6-31g'
-    basis = 'sto-3g'
+    basis = '6-31g'
+    #basis = 'sto-3g'
 
     [n_orb, n_a, n_b, h, g, mol, E_nuc, E_scf, C, S] = pyscf_helper.init(geometry,charge,spin,basis)
 
@@ -65,9 +65,10 @@ def test():
         number_op += openfermion.FermionOperator(((pa,1),(pa,0)), number_vec[p])
         number_op += openfermion.FermionOperator(((pb,1),(pb,0)), number_vec[p])
     number_op = openfermion.transforms.get_sparse_operator(number_op)
-   
+  
+    num_states = 4**n_orb 
     index_states = [] 
-    [e,v] = scipy.sparse.linalg.eigsh(hamiltonian_arr,16,which='SA',v0=reference_ket.todense())
+    [e,v] = scipy.sparse.linalg.eigsh(hamiltonian_arr,num_states,which='SA',v0=reference_ket.todense())
     for ei in range(len(e)):
         S2 = v[:,ei].conj().T.dot(s2.dot(v[:,ei]))
         number = v[:,ei].conj().T.dot(number_op.dot(v[:,ei]))
@@ -76,7 +77,7 @@ def test():
         print(" State %4i: %12.8f au  <S2>: %12.8f" %(ei,e[ei]+E_nuc,S2))
 
     print('index_states: ', index_states)
-    ex_states = np.zeros((16))
+    ex_states = np.zeros((num_states))
     for state in index_states:
         ex_states[state] = e[state]-e[0]
     print('ex_states', ex_states)
@@ -135,7 +136,7 @@ def test():
                     print(term) 
                     polar[key].append(term)
 
-            polar[key] = sum(polar[key]).real
+            polar[key] = -1.0 * sum(polar[key]).real
 
 
     print('polarizability: ', polar)
