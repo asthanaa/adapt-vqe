@@ -16,12 +16,18 @@ import qeom
 from scipy.sparse.linalg import eigs
 
 def test():
-    geometry = [('O', (0,0,0)), ('H', ( 0.95700111, 0.00000,  0.00000000)), ('H', (-0.23961394, 0.00000,  0.92651836))]
+    r0 = 2.0
+    geometry = '''
+    H 0 0 0
+    H 0 0 {0}
+    H 0 0 {1}
+    H 0 0 {2}
+    '''.format(r0,2*r0,3*r0)
 
     charge = 0
     spin = 0
     basis = 'sto3g'
-    [n_orb, n_a, n_b, h, g, mol, E_nuc, E_scf, C, S] = pyscf_helper.init(geometry,charge,spin,basis,n_frzn_occ=1,n_act=6)
+    [n_orb, n_a, n_b, h, g, mol, E_nuc, E_scf, C, S] = pyscf_helper.init(geometry,charge,spin,basis,n_frzn_occ=0,n_act=4)
 
     print(" n_orb: %4i" %n_orb)
     print(" n_a  : %4i" %n_a)
@@ -51,7 +57,7 @@ def test():
 
     reference_ket = scipy.sparse.csc_matrix(openfermion.jw_configuration_state(occupied_list, 2*n_orb)).transpose()
 
-    [e,v] = scipy.sparse.linalg.eigsh(hamiltonian.real,1,which='SA',v0=reference_ket.todense())
+    [e,v] = scipy.sparse.linalg.eigsh(hamiltonian.real,7,which='SA',v0=reference_ket.todense())
     for ei in range(len(e)):
         S2 = v[:,ei].conj().T.dot(s2.dot(v[:,ei]))
         print(" State %4i: %12.8f au  <S2>: %12.8f" %(ei,e[ei]+E_nuc,S2))
@@ -74,7 +80,7 @@ def test():
     #fci_levels=a+E_nuc
 
     #create operators single and double for each excitation
-    op=qeom.createops_ipfull(n_orb,n_a,n_b,n_orb-n_a,n_orb-n_b,reference_ket)
+    op=qeom.createops_eefull(n_orb,n_a,n_b,n_orb-n_a,n_orb-n_b,reference_ket)
     #print('op[0] is',op[0])
     #exit()
 
@@ -87,30 +93,28 @@ def test():
     #print('energy 1',qeom.expvalue(v.transpose().conj(),hamiltonian,v))
     print('barH based energy diff=0?',qeom.expvalue(reference_ket.transpose().conj(),barH,reference_ket)[0,0].real-e+E_nuc)
 
+    #create ex operator
+
     M=np.zeros((len(op),len(op)))
-    Q=np.zeros((len(op),len(op)))
     V=np.zeros((len(op),len(op)))
-    W=np.zeros((len(op),len(op)))
-    Hmat=np.zeros((len(op)*2,len(op)*2))
-    S=np.zeros((len(op)*2,len(op)*2))
     for i in range(len(op)):
         for j in range(len(op)):
             #mat=op[i].transpose().conj().dot(barH.dot(op[j]))
-            mat1=qeom.comm3(op[i].transpose().conj(),hamiltonian,op[j])
+            mat1=qeom.expvalue(op[i].transpose().conj(),hamiltonian,op[j])
+            mat1=scipy.sparse.csr_matrix(mat1)
             M[i,j]=qeom.expvalue(v.transpose().conj(),mat1,v)[0,0]
-            mat2=qeom.comm3(op[i].transpose().conj(),hamiltonian,op[j].transpose().conj())
-            Q[i,j]=-qeom.expvalue(v.transpose().conj(),mat2,v)[0,0]
-            mat3=qeom.comm2(op[i].transpose().conj(),op[j])
+            mat3=op[i].transpose().conj().dot(op[j])
             V[i,j]=qeom.expvalue(v.transpose().conj(),mat3,v)[0,0]
-            mat4=qeom.comm2(op[i].transpose().conj(),op[j].transpose().conj())
-            W[i,j]=-qeom.expvalue(v.transpose().conj(),mat4,v)[0,0]
-    Hmat=np.bmat([[M,Q],[Q.conj(),M.conj()]])
-    S=np.bmat([[V,W],[-W.conj(),-V.conj()]])
-    #Diagonalize ex operator-> eigenvalues are excitation energies
-    eig,aval=scipy.linalg.eig(Hmat,S)
-    #print('W',W)
-    print('final excitation energies',np.sort(eig.real)+e)
+    eig,aval=scipy.linalg.eig(M,V)
+    #print('V',V)
+
+    print('final excitation energies',(np.sort(eig.real)+E_nuc-e))
     #print('eigenvector 1st',aval[0])
-    #print('FCI excitation energies',fci_levels.real)
+    #idx = eig.argsort()
+    #eig = eig[idx]
+    #aval = aval[:, idx]
+
+    #for ei in range(len(eig)):
+    #    print(" State %4i: %12.8f au Gap:%12.8f" %(ei,eig[ei]-e,eig[ei]))
 if __name__== "__main__":
     test()

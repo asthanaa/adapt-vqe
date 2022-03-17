@@ -115,8 +115,9 @@ def test():
     #Diagonalize ex operator-> eigenvalues are excitation energies
     eig,aval=scipy.linalg.eig(Hmat,S)
     print('W',W)
-    print('final excitation energies',np.sort(eig.real)+e)
-    print('eigenvector 1st',aval[0])
+    print('final excited energies',np.sort(eig.real)+e)
+    print('final excitation energies',np.sort(eig.real))
+    #print('eigenvector 1st',aval[0])
     #print('FCI excitation energies',fci_levels.real)
 if __name__== "__main__":
     test()

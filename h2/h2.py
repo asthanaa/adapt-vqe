@@ -16,13 +16,13 @@ import qeom
 from scipy.sparse.linalg import eigs
 
 def test():
-    r =0.7
+    r =2
     geometry = [('H', (0,0,0)), ('H', (0,0,1*r))]
 
 
     charge = 0
     spin = 0
-    basis = 'sto3g'
+    basis = '631g'
 
     [n_orb, n_a, n_b, h, g, mol, E_nuc, E_scf, C, S] = pyscf_helper.init(geometry,charge,spin,basis)
 
@@ -63,7 +63,7 @@ def test():
     #pyscf.molden.from_mo(mol, "full.molden", sq_ham.C)
 
     #   Francesco, change this to singlet_GSD() if you want generalized singles and doubles
-    pool = operator_pools.singlet_SD()
+    pool = operator_pools.singlet_GSD()
     pool.init(n_orb, n_occ_a=n_a, n_occ_b=n_b, n_vir_a=n_orb-n_a, n_vir_b=n_orb-n_b)
     for i in range(pool.n_ops):
         print(pool.get_string_for_term(pool.fermi_ops[i]))
@@ -77,7 +77,7 @@ def test():
     #fci_levels=a+E_nuc
 
     #create operators single and double for each excitation
-    op=qeom.createops_basic(n_orb,n_a,n_b,n_orb-n_a,n_orb-n_b,reference_ket)
+    op=qeom.createops_eefull(n_orb,n_a,n_b,n_orb-n_a,n_orb-n_b,reference_ket)
     #print('op[0] is',op[0])
     #exit()
 
@@ -105,8 +105,10 @@ def test():
     #Diagonalize ex operator-> eigenvalues are excitation energies
     eig,aval=scipy.linalg.eig(Hmat)
     print('V',V)
-    print('final excitation energies',np.sort(eig.real)+e)
+
+    print('final excited states',np.sort(eig.real)+e)
+    print('final excitation energies',np.sort(eig.real))
     #print('FCI excitation energies',fci_levels.real)
-    print('eigenvector',aval[0])
+    #print('eigenvector',aval[0])
 if __name__== "__main__":
     test()

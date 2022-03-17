@@ -60,7 +60,7 @@ def test():
     #pyscf.molden.from_mo(mol, "full.molden", sq_ham.C)
 
     #   Francesco, change this to singlet_GSD() if you want generalized singles and doubles
-    pool = operator_pools.singlet_SD()
+    pool = operator_pools.singlet_GSD()
     pool.init(n_orb, n_occ_a=n_a, n_occ_b=n_b, n_vir_a=n_orb-n_a, n_vir_b=n_orb-n_b)
     for i in range(pool.n_ops):
         print(pool.get_string_for_term(pool.fermi_ops[i]))
