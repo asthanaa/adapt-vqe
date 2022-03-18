@@ -16,16 +16,23 @@ import qeom
 from scipy.sparse.linalg import eigs
 from scipy import linalg
 
-def test():
+def test(prop_list):
     #r =0.7
     #geometry = [('H', (0,0,0)), ('H', (0,0,1*r))]
     
+    #geometry = '''
+    #           H
+    #           H 1 {0}
+    #           H 1 {1} 2 {2}
+    #           H 3 {0} 1 {2} 2 {3}
+    #           '''.format(0.75, 1.5, 90.0, 60.0)
+
     geometry = '''
-               H
-               H 1 {0}
-               H 1 {1} 2 {2}
-               H 3 {0} 1 {2} 2 {3}
-               '''.format(0.75, 1.5, 90.0, 60.0)
+               H            0.000000000000    -0.750000000000    -0.324759526419
+               H           -0.375000000000    -0.750000000000     0.324759526419
+               H            0.000000000000     0.750000000000    -0.324759526419
+               H            0.375000000000     0.750000000000     0.324759526419
+               '''
 
 
     charge = 0
@@ -164,9 +171,40 @@ def test():
         fermi_dipole_mo_op.append(openfermion.transforms.get_sparse_operator(fermi_op))  
 
     print('fermi_dipole_mo_op: ', fermi_dipole_mo_op)
+
+    if 'optrot' in prop_list:
+        # make angular momentum integrals!
+        # reading electric dipole integrals
+        angmom_ao = mol.intor('int1e_cg_irxp')
+        print('angmom (ao): ', angmom_ao)
+        angmom_mo = []
+        # convert from AO to MO basis
+        for i in range(3):
+            angmom_mo.append(-0.5*np.einsum("pu,uv,vq->pq", C.T, angmom_ao[i], C))
+            print('angmom (mo): ', angmom_mo[i])
+
+        fermi_angmom_mo_op = []
+        shift = 0
+        for i in range(3):
+            fermi_op = openfermion.FermionOperator()
+            is_all_zero = np.all((angmom_mo[i] == 0))
+            if not is_all_zero:
+                #MU
+                for p in range(angmom_mo[0].shape[0]):
+                    pa = 2*p + shift
+                    pb = 2*p+1 +  shift
+                    for q in range(angmom_mo[0].shape[1]):
+                        qa = 2*q +shift
+                        qb = 2*q+1 +shift
+                        fermi_op += openfermion.FermionOperator(((pa,1),(qa,0)), angmom_mo[i][p,q])
+                        fermi_op += openfermion.FermionOperator(((pb,1),(qb,0)), angmom_mo[i][p,q])
+                fermi_angmom_mo_op.append(openfermion.transforms.get_sparse_operator(fermi_op))
+            else:
+                fermi_angmom_mo_op.append([])
+        print('fermi_angmom_mo_op: ', fermi_angmom_mo_op)
    
-    response_amp_xyz = [] 
-    rhs_vec_xyz = []
+    response_amp_dip_xyz = [] 
+    rhs_vec_dip_xyz = []
     for x in range(3):
         dip_up = np.zeros((len(op)))
         dip_down = np.zeros((len(op)))
@@ -188,8 +226,8 @@ def test():
             else:
                 rhs_vec[i] = dip_down[i-len(op)]
 
-        rhs_vec_xyz.append(rhs_vec)
-        response_amp_xyz.append(linalg.solve(Hmat_res, rhs_vec))
+        rhs_vec_dip_xyz.append(rhs_vec)
+        response_amp_dip_xyz.append(linalg.solve(Hmat_res, rhs_vec))
 
 
     cart = ['X', 'Y', 'Z']   
@@ -197,12 +235,52 @@ def test():
     for x in range(3):
         for y in range(3):
             key = cart[x] + cart[y]
-            polar[key] = rhs_vec_xyz[x].dot(response_amp_xyz[y])
+            polar[key] = rhs_vec_dip_xyz[x].dot(response_amp_dip_xyz[y])
 
     print('polarizability: ', polar)
 
-    print('rhs_vec_xyz[z]: ', rhs_vec_xyz[2])
-    print('response_amp_xyz[z]: ', response_amp_xyz[2])
+    #print('rhs_vec_dip_xyz[z]: ', rhs_vec_dip_xyz[2])
+    #print('response_amp_dip_xyz[z]: ', response_amp_dip_xyz[2])
+
+    if 'optrot' in prop_list:
+        optrot = {}
+        response_amp_angmom_xyz = [] 
+        rhs_vec_angmom_xyz = []
+        for x in range(3):
+            dip_up = np.zeros((len(op)))
+            dip_down = np.zeros((len(op)))
+            rhs_vec = np.zeros((2 * len(op)))
+            shape0 = fermi_angmom_mo_op[x].shape[0] 
+            is_all_zero = True
+            if shape0 > 1:
+                is_all_zero = False
+            for i in range(len(op)):
+                if not is_all_zero:
+                    mat1=qeom.comm2(fermi_angmom_mo_op[x],op[i])
+                    dip_up[i]=qeom.expvalue(v.transpose().conj(),mat1,v)[0,0]
+                    mat2=qeom.comm2(fermi_angmom_mo_op[x],op[i].transpose().conj())
+                    dip_down[i]=-1.0 * qeom.expvalue(v.transpose().conj(),mat2,v)[0,0]
+                    #dip_down[i]=qeom.expvalue(v.transpose().conj(),mat2,v)[0,0]
+            for i in range(2 * len(op)):
+                if i < len(op):
+                    rhs_vec[i] = dip_up[i]
+                else:
+                    rhs_vec[i] = dip_down[i-len(op)]
+
+            rhs_vec_angmom_xyz.append(rhs_vec)
+            response_amp_angmom_xyz.append(linalg.solve(Hmat_res, rhs_vec))
+        for x in range(3):
+            for y in range(3):
+                key = cart[x] + cart[y]
+                optrot[key] = -1.0 * rhs_vec_dip_xyz[x].dot(response_amp_angmom_xyz[y])
+        print('optrot: ', optrot) 
+        print('rhs_vec_dip_xyz: ', rhs_vec_dip_xyz[0])
+        print('response_amp_dip_xyz: ',  response_amp_dip_xyz[0])
+        print('rhs_vec_angmom_xyz: ', rhs_vec_angmom_xyz[0])
+        print('response_amp_angmom_xyz: ',  response_amp_angmom_xyz[0])
+        
+
+
 
 if __name__== "__main__":
-    test()
+    test(['polar', 'optrot'])

@@ -24,18 +24,35 @@ def test(prop_list):
     #           H 1 {0}
     #           H 1 {1} 2 {2}
     #           H 3 {0} 1 {2} 2 {3}
-    #           '''.format(0.75, 1.5, 90.0, 60.0)
+    #           '''.format(0.75, 1.5, 90.0, 60.0)Q
+
     geometry = '''
-     H            0.000000000000    -0.750000000000    -0.324759526419
-     H           -0.375000000000    -0.750000000000     0.324759526419 
-     H            0.000000000000     0.750000000000    -0.324759526419 
-     H            0.375000000000     0.750000000000     0.324759526419 
-     '''
+               H            0.000000000000    -0.750000000000    -0.324759526419
+               H           -0.375000000000    -0.750000000000     0.324759526419 
+               H            0.000000000000     0.750000000000    -0.324759526419 
+               H            0.375000000000     0.750000000000     0.324759526419 
+               '''
+
+    # distorted (H2)2 --> to check symmetry of linear response function for exact wavefunction!
+    #geometry = '''
+    #           H            0.000000000000    -0.750000000000    -0.324759526419
+    #           H           -0.375000000000    -0.760000000000     0.324759526419
+    #           H            0.000000000000     0.750000000000    -0.324759526419
+    #           H            0.375000000000     0.850000000000     0.45
+    #           '''
+
+    #geometry = '''
+    # O            0.059724787792     0.052257861912     0.000000000000   
+    # H            0.059724787792    -1.147742138088     0.000000000000   
+    # H           -1.007600511112     0.318371947072     0.000000000000   
+    # '''
+
     charge = 0
     spin = 0
     #basis = '6-31g'
     basis = 'sto-3g'
 
+    #[n_orb, n_a, n_b, h, g, mol, E_nuc, E_scf, C, S] = pyscf_helper.init(geometry,charge,spin,basis, n_frzn_occ=1, n_act=6)
     [n_orb, n_a, n_b, h, g, mol, E_nuc, E_scf, C, S] = pyscf_helper.init(geometry,charge,spin,basis)
 
     print(" n_orb: %4i" %n_orb)
@@ -82,9 +99,9 @@ def test(prop_list):
     for ei in range(len(e)):
         S2 = v[:,ei].conj().T.dot(s2.dot(v[:,ei]))
         number = v[:,ei].conj().T.dot(number_op.dot(v[:,ei]))
-        if np.round(number.real, 6) == n_a + n_b and ei !=0:
+        if np.round(number.real, 3) == n_a + n_b and ei !=0:
             index_states.append(ei) 
-            print(" State %4i: %12.8f au  <S2>: %12.8f" %(ei,e[ei]+E_nuc,S2))
+        print(" State %4i: %12.8f au  <S2>: %12.8f" %(ei,e[ei]+E_nuc,S2))
 
     print('index_states: ', index_states)
     ex_states = np.zeros((num_states))
@@ -151,10 +168,11 @@ def test(prop_list):
                 fermi_angmom_mo_op.append(openfermion.transforms.get_sparse_operator(fermi_op))
             else:
                 fermi_angmom_mo_op.append([])
-        #print('fermi_angmom_mo_op: ', fermi_angmom_mo_op)
+        print('fermi_angmom_mo_op: ', fermi_angmom_mo_op)
 
     omega = 0.077357 
-    # resp_state[i] = sum_i 2 * omega * < 0 | X | i > < 0 | Y | i > / (omega^2 - omega_i^2)
+    # resp_state[i] = sum_i  < 0 | X | i > < i | Y | 0 > / (omega - omega_i)
+    #                        + < 0 | Y | i > < i | X | 0 > / (omega + omega_i) 
     cart = ['X', 'Y', 'Z']
     polar = {}
     for x in range(3):
@@ -174,13 +192,38 @@ def test(prop_list):
                     term2 *= (1/(omega + ex_states[state]))
 
                     term = term1 - term2
-                    print(term) 
+                    #print(term) 
                     polar[key].append(term)
 
             polar[key] = -1.0 * sum(polar[key]).real
 
 
     print('polarizability: ', polar)
+
+    if 'optrot' in prop_list:
+        optrot = {}
+        for x in range(3):
+            for y in range(3):
+                key = cart[x] + cart[y]
+                optrot[key] = []
+                if isinstance(fermi_dipole_mo_op[x], list) or  isinstance(fermi_angmom_mo_op[y], list):
+                    optrot[key] = [0.0]
+                else:
+                    for state in index_states:
+                        term1  =  v[:,0].transpose().conj().dot(fermi_dipole_mo_op[x].dot(v[:,state]))
+                        term1 *= v[:,state].transpose().conj().dot(fermi_angmom_mo_op[y].dot(v[:,0]))
+                        term1 *= (1/(omega - ex_states[state]))
+
+                        term2  =  v[:,0].transpose().conj().dot(fermi_angmom_mo_op[y].dot(v[:,state]))
+                        term2 *= v[:,state].transpose().conj().dot(fermi_dipole_mo_op[x].dot(v[:,0]))
+                        term2 *= (1/(omega + ex_states[state]))
+
+                        term = term1 - term2
+                        optrot[key].append(term)
+
+                optrot[key] = sum(optrot[key]).real
+
+    print('optical rotation: ', optrot)
 
 if __name__== "__main__":
     test(['polar', 'optrot'])
