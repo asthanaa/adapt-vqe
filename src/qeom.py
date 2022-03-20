@@ -470,7 +470,7 @@ def createops_eafull(no,nia,nib,nva,nvb,reference_ket):
                         optmp = normal_ordered(optmp)
                         ops.append(optmp)
 
-                        optmp =  FermionOperator(((ab,1),(bb,1),(ia,0)), norm)
+                        optmp =  FermionOperator(((ab,1),(ba,1),(ia,0)), norm)
                         optmp = normal_ordered(optmp)                           
                         ops.append(optmp)
                         optmp =  FermionOperator(((ab,1),(ba,1),(ib,0)), norm)
@@ -480,7 +480,7 @@ def createops_eafull(no,nia,nib,nva,nvb,reference_ket):
                         optmp =  FermionOperator(((aa,1),(bb,1),(ia,0)), norm)
                         optmp = normal_ordered(optmp)                           
                         ops.append(optmp)
-                        optmp =  FermionOperator(((aa,1),(ba,1),(ib,0)), norm)
+                        optmp =  FermionOperator(((aa,1),(bb,1),(ib,0)), norm)
                         optmp = normal_ordered(optmp)                           
                         ops.append(optmp)
                     
