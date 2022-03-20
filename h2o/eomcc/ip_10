@@ -1,0 +1,360 @@
+#INFO: **** input file is /home/aasthana/adapt/adapt-vqe/h2o/eomcc/eomcc.py ****
+#!/usr/bin/env python
+
+import numpy as np
+from pyscf import gto, scf, cc
+mol = gto.Mole()
+mol.verbose = 5
+mol.unit = 'B'
+mol.atom = 'O; H 1 1.80847; H 1 1.80847 2 104.5'
+mol.basis = 'sto-3g'
+mol.build()
+print(gto.Mole.energy_nuc)
+mf = scf.RHF(mol)
+mf.verbose = 7
+mf.scf()
+
+mycc = cc.RCCSD(mf)
+mycc.verbose = 7
+mycc.frozen = 1
+mycc.ccsd()
+e_ip, c_ip = np.array(mycc.ipccsd(nroots=10)[0])
+print('IP',e_ip)
+exit()
+eS = 27.2114 * np.array(mycc.eomip_ccsd_singlet(nroots=5)[0])
+print(eS)
+eT = 27.2114 * np.array(mycc.eomip_ccsd_triplet(nroots=5)[0])
+print('S-S: ', eS)
+print('S-T: ', eT)
+#INFO: ******************** input file end ********************
+
+
+System: uname_result(system='Linux', node='tinkercliffs2', release='3.10.0-1062.18.1.el7.x86_64', version='#1 SMP Wed Feb 12 14:08:31 UTC 2020', machine='x86_64', processor='x86_64')  Threads 128
+Python 3.7.11 (default, Jul 27 2021, 14:32:16) 
+[GCC 7.5.0]
+numpy 1.15.0  scipy 1.1.0
+Date: Sat Jan 15 14:16:41 2022
+PySCF version 2.0.1
+PySCF path  /home/aasthana/.conda/envs/adapt3/lib/python3.7/site-packages/pyscf
+
+[CONFIG] conf_file None
+[INPUT] verbose = 5
+[INPUT] max_memory = 4000 
+[INPUT] num. atoms = 3
+[INPUT] num. electrons = 10
+[INPUT] charge = 0
+[INPUT] spin (= nelec alpha-beta = 2S) = 0
+[INPUT] symmetry False subgroup None
+[INPUT] Mole.unit = B
+[INPUT]  1 O      0.000000000000   0.000000000000   0.000000000000 AA    0.000000000000   0.000000000000   0.000000000000 Bohr
+[INPUT]  2 H      0.957001110632   0.000000000000   0.000000000000 AA    1.808470000000   0.000000000000   0.000000000000 Bohr
+[INPUT]  3 H     -0.239613941960   0.000000000000   0.926518367098 AA   -0.452804725932   0.000000000000   1.750865963195 Bohr
+[INPUT] ---------------- BASIS SET ---------------- 
+[INPUT] l, kappa, [nprim/nctr], expnt,             c_1 c_2 ...
+[INPUT] O
+[INPUT] 0    0    [3    /1   ]  130.70932         0.15432897
+                                23.808861         0.53532814
+                                6.4436083         0.44463454
+[INPUT] 0    0    [3    /1   ]  5.0331513         -0.09996723
+                                1.1695961         0.39951283
+                                0.380389          0.70011547
+[INPUT] 1    0    [3    /1   ]  5.0331513         0.15591627
+                                1.1695961         0.60768372
+                                0.380389          0.39195739
+[INPUT] H
+[INPUT] 0    0    [3    /1   ]  3.42525091        0.15432897
+                                0.62391373        0.53532814
+                                0.1688554         0.44463454
+
+nuclear repulsion = 9.19692304527053
+number of shells = 5
+number of NR pGTOs = 21
+number of NR cGTOs = 7
+basis = sto-3g
+ecp = {}
+CPU time:         2.27
+<function energy_nuc at 0x2aaabb865440>
+
+
+******** <class 'pyscf.scf.hf.RHF'> ********
+method = RHF
+initial guess = minao
+damping factor = 0
+level_shift factor = 0
+DIIS = <class 'pyscf.scf.diis.CDIIS'>
+diis_start_cycle = 1
+diis_space = 8
+SCF conv_tol = 1e-09
+SCF conv_tol_grad = None
+SCF max_cycles = 50
+direct_scf = True
+direct_scf_tol = 1e-13
+chkfile to save SCF result = /localscratch/tmp_lnod4g8
+max_memory 4000 MB (current use 53 MB)
+Set gradient conv threshold to 3.16228e-05
+Nelec from initial guess = 9.860904322539628
+E1 = -120.4579907168161  E_coul = 36.42302460554419
+init E= -74.8380430660014
+cond(S) = 5.64536790985834
+    CPU time for initialize scf     50.01 sec, wall time      6.22 sec
+  HOMO = -0.393351759718699  LUMO = 0.427215247544208
+  mo_energy =
+[-20.5889087   -1.58231652  -0.70740644  -0.52944497  -0.39335176
+   0.42721525   0.53618772]
+E1 = -123.53024017595884  E_coul = 39.420518086564286
+cycle= 1 E= -74.912799044124  delta_E= -0.0748  |g|= 0.37  |ddm|= 1.69
+    CPU time for cycle= 1      7.20 sec, wall time      0.90 sec
+diis-norm(errvec)=0.39613
+diis-c [-0.15691867  1.        ]
+  HOMO = -0.267967575444403  LUMO = 0.644773480037426
+  mo_energy =
+[-19.99488537  -1.18632892  -0.56883788  -0.35233542  -0.26796758
+   0.64477348   0.78264888]
+E1 = -122.29258292564987  E_coul = 38.13328118654825
+cycle= 2 E= -74.9623786938311  delta_E= -0.0496  |g|= 0.0424  |ddm|= 0.559
+    CPU time for cycle= 2      7.18 sec, wall time      0.90 sec
+diis-norm(errvec)=0.0478957
+diis-c [-0.00136209  0.07183978  0.92816022]
+  HOMO = -0.389597365100129  LUMO = 0.606079562220102
+  mo_energy =
+[-20.23987629  -1.26657809  -0.61946732  -0.45152438  -0.38959737
+   0.60607956   0.74138793]
+E1 = -122.3745743864769  E_coul = 38.2147732561079
+cycle= 3 E= -74.9628780850985  delta_E= -0.000499  |g|= 0.00857  |ddm|= 0.0428
+    CPU time for cycle= 3      6.24 sec, wall time      0.80 sec
+diis-norm(errvec)=0.00910223
+diis-c [-1.14808934e-07 -2.13466500e-02 -3.04585310e-01  1.32593196e+00]
+  HOMO = -0.391288668466144  LUMO = 0.605981140218979
+  mo_energy =
+[-20.24183604  -1.26858477  -0.61813584  -0.45313967  -0.39128867
+   0.60598114   0.74271306]
+E1 = -122.37428322158509  E_coul = 38.214454600327514
+cycle= 4 E= -74.962905575987  delta_E= -2.75e-05  |g|= 6.3e-05  |ddm|= 0.0153
+    CPU time for cycle= 4      5.69 sec, wall time      0.70 sec
+diis-norm(errvec)=6.68255e-05
+diis-c [-1.23277209e-09  1.43802318e-03  1.86488438e-02 -8.37673548e-02
+  1.06368049e+00]
+  HOMO = -0.391268947345163  LUMO = 0.605902618462679
+  mo_energy =
+[-20.24173269  -1.26852934  -0.61799546  -0.45306379  -0.39126895
+   0.60590262   0.74257296]
+E1 = -122.37441824513014  E_coul = 38.21458962232422
+cycle= 5 E= -74.9629055775354  delta_E= -1.55e-09  |g|= 1.45e-05  |ddm|= 9.99e-05
+    CPU time for cycle= 5      5.55 sec, wall time      0.70 sec
+diis-norm(errvec)=1.40192e-05
+diis-c [-6.84035470e-11  3.74705188e-04  5.78404774e-03 -2.41783894e-02
+ -2.20540846e-01  1.23856048e+00]
+  HOMO = -0.391271955962295  LUMO = 0.605907202221307
+  mo_energy =
+[-20.24174038  -1.26853387  -0.61800399  -0.45306586  -0.39127196
+   0.6059072    0.74257622]
+E1 = -122.37440731101836  E_coul = 38.21457868805669
+cycle= 6 E= -74.9629055776911  delta_E= -1.56e-10  |g|= 3.68e-06  |ddm|= 4.13e-05
+    CPU time for cycle= 6      5.73 sec, wall time      0.70 sec
+  HOMO = -0.391272925951581  LUMO = 0.605908665581083
+  mo_energy =
+[-20.24174295  -1.26853543  -0.61800669  -0.45306698  -0.39127293
+   0.60590867   0.74257784]
+E1 = -122.3744041532935  E_coul = 38.21457553032317
+Extra cycle  E= -74.9629055776998  delta_E= -8.67e-12  |g|= 1.59e-06  |ddm|= 8.18e-06
+    CPU time for scf_cycle     93.87 sec, wall time     11.72 sec
+    CPU time for SCF     93.89 sec, wall time     11.72 sec
+converged SCF energy = -74.9629055776998
+
+******** <class 'pyscf.cc.ccsd.CCSD'> ********
+CC2 = 0
+CCSD nocc = 4, nmo = 6
+frozen orbitals 1
+max_cycle = 50
+direct = 0
+conv_tol = 1e-07
+conv_tol_normt = 1e-05
+diis_space = 6
+diis_start_cycle = 0
+diis_start_energy_diff = 1e+09
+max_memory 4000 MB (current use 58 MB)
+total FLOPs 19520.0
+E1 = -122.3744041532935  E_coul = 38.21457553032317
+    CPU time for CCSD integral transformation     59.56 sec, wall time      7.50 sec
+Init t2, MP2 energy = -74.9982850410545  E_corr(MP2) -0.0353794633547121
+    CPU time for init mp2      0.23 sec, wall time      0.00 sec
+Init E_corr(CCSD) = -0.0353794633558169
+    CPU time for vvvv [0:1]      5.97 sec, wall time      0.80 sec
+    CPU time for vvvv [1:2]     26.21 sec, wall time      3.30 sec
+    CPU time for vvvv     32.45 sec, wall time      4.10 sec
+max_memory 3882 MB,  nocc,nvir = 4,2  blksize = 2
+    CPU time for vovv [0:2]      9.53 sec, wall time      1.20 sec
+    CPU time for ovvv     10.37 sec, wall time      1.30 sec
+max_memory 3882 MB,  nocc,nvir = 4,2  blksize = 2
+    CPU time for voov [0:2]      0.66 sec, wall time      0.01 sec
+    CPU time for update t1 t2     43.49 sec, wall time      5.40 sec
+DIIS for step 0
+cycle = 1  E_corr(CCSD) = -0.0447301409525425  dE = -0.0093506776  norm(t1,t2) = 0.0287961
+    CPU time for CCSD iter     49.32 sec, wall time      6.20 sec
+    CPU time for vvvv [0:1]      4.73 sec, wall time      0.60 sec
+    CPU time for vvvv [1:2]     22.40 sec, wall time      2.80 sec
+    CPU time for vvvv     27.25 sec, wall time      3.40 sec
+max_memory 3882 MB,  nocc,nvir = 4,2  blksize = 2
+    CPU time for vovv [0:2]      3.72 sec, wall time      0.50 sec
+    CPU time for ovvv      4.10 sec, wall time      0.50 sec
+max_memory 3882 MB,  nocc,nvir = 4,2  blksize = 2
+    CPU time for voov [0:2]      0.26 sec, wall time      0.00 sec
+    CPU time for update t1 t2     31.68 sec, wall time      3.90 sec
+diis-c [-1.07601173e-04  1.00000000e+00]
+DIIS for step 1
+cycle = 2  E_corr(CCSD) = -0.0476124925408491  dE = -0.00288235159  norm(t1,t2) = 0.0103731
+    CPU time for CCSD iter     40.76 sec, wall time      5.10 sec
+    CPU time for vvvv [0:1]      1.52 sec, wall time      0.20 sec
+    CPU time for vvvv [1:2]      0.05 sec, wall time      0.00 sec
+    CPU time for vvvv      1.67 sec, wall time      0.20 sec
+max_memory 3882 MB,  nocc,nvir = 4,2  blksize = 2
+    CPU time for vovv [0:2]      0.15 sec, wall time      0.00 sec
+    CPU time for ovvv      0.42 sec, wall time      0.00 sec
+max_memory 3882 MB,  nocc,nvir = 4,2  blksize = 2
+    CPU time for voov [0:2]      2.71 sec, wall time      0.40 sec
+    CPU time for update t1 t2      4.87 sec, wall time      0.60 sec
+diis-c [-1.85662924e-06 -6.33817457e-01  1.63381746e+00]
+DIIS for step 2
+cycle = 3  E_corr(CCSD) = -0.0492507192537487  dE = -0.00163822671  norm(t1,t2) = 0.00421552
+    CPU time for CCSD iter      4.97 sec, wall time      0.60 sec
+    CPU time for vvvv [0:1]      0.05 sec, wall time      0.00 sec
+    CPU time for vvvv [1:2]      0.05 sec, wall time      0.00 sec
+    CPU time for vvvv      0.18 sec, wall time      0.00 sec
+max_memory 3882 MB,  nocc,nvir = 4,2  blksize = 2
+    CPU time for vovv [0:2]      0.10 sec, wall time      0.00 sec
+    CPU time for ovvv      0.24 sec, wall time      0.00 sec
+max_memory 3882 MB,  nocc,nvir = 4,2  blksize = 2
+    CPU time for voov [0:2]      6.69 sec, wall time      0.90 sec
+    CPU time for update t1 t2      7.75 sec, wall time      1.00 sec
+diis-c [-7.44260093e-08  4.29672239e-01 -1.16768815e+00  1.73801591e+00]
+DIIS for step 3
+cycle = 4  E_corr(CCSD) = -0.0492607133950385  dE = -9.99414129e-06  norm(t1,t2) = 0.000644057
+    CPU time for CCSD iter      7.96 sec, wall time      1.00 sec
+    CPU time for vvvv [0:1]      0.06 sec, wall time      0.00 sec
+    CPU time for vvvv [1:2]      0.05 sec, wall time      0.00 sec
+    CPU time for vvvv      0.21 sec, wall time      0.00 sec
+max_memory 3881 MB,  nocc,nvir = 4,2  blksize = 2
+    CPU time for vovv [0:2]      0.15 sec, wall time      0.00 sec
+    CPU time for ovvv      0.59 sec, wall time      0.10 sec
+max_memory 3881 MB,  nocc,nvir = 4,2  blksize = 2
+    CPU time for voov [0:2]      0.28 sec, wall time      0.00 sec
+    CPU time for update t1 t2      1.14 sec, wall time      0.10 sec
+diis-c [-9.45530830e-10 -1.43633235e-01  3.98581824e-01 -6.71759745e-01
+  1.41681116e+00]
+DIIS for step 4
+cycle = 5  E_corr(CCSD) = -0.0492594113111544  dE = 1.30208388e-06  norm(t1,t2) = 9.12503e-05
+    CPU time for CCSD iter      1.26 sec, wall time      0.10 sec
+    CPU time for vvvv [0:1]      0.20 sec, wall time      0.09 sec
+    CPU time for vvvv [1:2]      0.05 sec, wall time      0.00 sec
+    CPU time for vvvv      0.34 sec, wall time      0.10 sec
+max_memory 3881 MB,  nocc,nvir = 4,2  blksize = 2
+    CPU time for vovv [0:2]      1.46 sec, wall time      0.20 sec
+    CPU time for ovvv      1.61 sec, wall time      0.20 sec
+max_memory 3881 MB,  nocc,nvir = 4,2  blksize = 2
+    CPU time for voov [0:2]      6.06 sec, wall time      0.70 sec
+    CPU time for update t1 t2     10.82 sec, wall time      1.40 sec
+diis-c [-3.40723549e-11  3.55186804e-02 -9.83464313e-02  1.69163856e-01
+ -3.82207602e-01  1.27587150e+00]
+DIIS for step 5
+cycle = 6  E_corr(CCSD) = -0.0492586560642828  dE = 7.55246872e-07  norm(t1,t2) = 8.99978e-06
+    CPU time for CCSD iter     12.25 sec, wall time      1.60 sec
+    CPU time for vvvv [0:1]      0.09 sec, wall time      0.00 sec
+    CPU time for vvvv [1:2]      0.05 sec, wall time      0.00 sec
+    CPU time for vvvv      0.23 sec, wall time      0.00 sec
+max_memory 3881 MB,  nocc,nvir = 4,2  blksize = 2
+    CPU time for vovv [0:2]      0.46 sec, wall time      0.10 sec
+    CPU time for ovvv      0.66 sec, wall time      0.10 sec
+max_memory 3881 MB,  nocc,nvir = 4,2  blksize = 2
+    CPU time for voov [0:2]      0.28 sec, wall time      0.00 sec
+    CPU time for update t1 t2      1.25 sec, wall time      0.10 sec
+diis-c [-9.57013357e-13 -7.10404896e-03  1.95544791e-02 -3.56702680e-02
+  8.99326551e-02 -5.62399696e-01  1.49568688e+00]
+DIIS for step 6
+cycle = 7  E_corr(CCSD) = -0.0492587438256712  dE = -8.77613884e-08  norm(t1,t2) = 2.46372e-06
+    CPU time for CCSD iter      1.36 sec, wall time      0.10 sec
+    CPU time for CCSD    117.91 sec, wall time     14.70 sec
+CCSD converged
+E(CCSD) = -75.01216432152547  E_corr = -0.04925874382567116
+
+******** <class 'pyscf.cc.eom_rccsd.EOMIP'> ********
+max_space = 20
+max_cycle = 50
+conv_tol = 1e-07
+partition = None
+max_memory 4000 MB (current use 118 MB)
+E1 = -122.3744041532935  E_coul = 38.21457553032317
+    CPU time for CCSD integral transformation      0.35 sec, wall time      0.00 sec
+    CPU time for EOM-CCSD shared one-electron intermediates      0.18 sec, wall time      0.09 sec
+    CPU time for EOM-CCSD shared two-electron intermediates      0.10 sec, wall time      0.00 sec
+    CPU time for EOM-CCSD IP intermediates      0.13 sec, wall time      0.00 sec
+tol 1e-07  toloose 0.000316228
+max_cycle 50  max_space 56  max_memory 2000  incore True
+davidson 0 10  |r|= 0.226  e= [0.37277767 0.46954942 0.64288413 1.127994   1.13263504 1.15772107
+ 1.21232643 1.22079549 1.24205865 1.26319166]  max|de|= 1.26  lindep=    1
+Old state -> New state
+    4     ->     3 
+    3     ->     4 
+    7     ->     6 
+    6     ->     7 
+Throwing out eigenvector 0 with norm=9.46e-16
+Throwing out eigenvector 3 with norm=3.32e-15
+Throwing out eigenvector 6 with norm=1.7e-15
+Throwing out eigenvector 9 with norm=3.03e-15
+davidson 1 19  |r|= 0.0675  e= [0.30942272 0.40084739 0.6117295  1.09289419 1.10970609 1.12580849
+ 1.17521759 1.18869927 1.23371117 1.26481172]  max|de|= -0.0687  lindep= 0.937
+Old state -> New state
+    5     ->     4 
+    4     ->     5 
+    5     ->     9 
+root 0 converged  |r|= 3.55e-16  e= 0.3094227213045504  max|de|=    0
+root 3 converged  |r|= 2.07e-15  e= 1.0928941864324722  max|de|= 3.11e-15
+root 6 converged  |r|= 3.56e-15  e= 1.1752175897334098  max|de|= -3.11e-15
+Throwing out eigenvector 0 with norm=3.55e-16
+Throwing out eigenvector 3 with norm=2.07e-15
+Throwing out eigenvector 5 with norm=4.6e-15
+Throwing out eigenvector 6 with norm=3.56e-15
+Throwing out eigenvector 8 with norm=3.95e-15
+davidson 2 25  |r|= 0.0902  e= [0.30942272 0.40054522 0.61134618 1.09289419 1.10080299 1.11679973
+ 1.17521759 1.18523045 1.21328123 1.22682897]  max|de|= 0.101  lindep= 0.973
+Old state -> New state
+    9     ->     8 
+    8     ->     9 
+root 5 converged  |r|= 1.8e-15  e= 1.1167997338364224  max|de|=    0
+root 9 converged  |r|= 2.2e-15  e= 1.2132812277061358  max|de|= 4.44e-16
+Throwing out eigenvector 0 with norm=1.19e-15
+Throwing out eigenvector 3 with norm=2.98e-15
+Throwing out eigenvector 5 with norm=1.8e-15
+Throwing out eigenvector 6 with norm=1.68e-15
+Throwing out eigenvector 9 with norm=2.2e-15
+davidson 3 30  |r|= 0.0313  e= [0.30942272 0.40101811 0.6113453  1.09289419 1.09522191 1.11679973
+ 1.17521759 1.18308766 1.20346921 1.21328123]  max|de|= -0.0234  lindep= 0.959
+Throwing out eigenvector 0 with norm=1.04e-15
+Throwing out eigenvector 1 with norm=1.26e-15
+Throwing out eigenvector 3 with norm=1.82e-15
+Throwing out eigenvector 4 with norm=1.99e-15
+Throwing out eigenvector 5 with norm=2.28e-15
+Throwing out eigenvector 6 with norm=2.18e-15
+Throwing out eigenvector 8 with norm=1.7e-15
+Throwing out eigenvector 9 with norm=1.52e-15
+davidson 4 35  |r|= 0.00215  e= [0.30942272 0.40103664 0.61134654 1.09289419 1.09426872 1.11679973
+ 1.17521759 1.18001132 1.18698377 1.21328123]  max|de|= -0.0165  lindep= 0.998
+root 1 converged  |r|= 2.21e-15  e= 0.40103663783223154  max|de|= 1.11e-15
+root 2 converged  |r|= 1.49e-15  e= 0.6113465436860339  max|de|= -7.81e-10
+root 4 converged  |r|= 1.91e-15  e= 1.0942687167500624  max|de|= -4.44e-16
+root 8 converged  |r|= 2.94e-15  e= 1.1869837706858823  max|de|= -4.44e-16
+davidson 5 36  |r|= 2.94e-15  e= [0.30942272 0.40103664 0.61134654 1.09289419 1.09426872 1.11679973
+ 1.17521759 1.17998296 1.18698377 1.21328123]  max|de|= -2.84e-05  lindep=    1
+Linear dependency in trial subspace. |r| for each state [8.20740813e-16 2.21493988e-15 1.49180696e-15 2.86911331e-15
+ 1.90739223e-15 2.37613392e-15 2.09022297e-15 1.93530880e-15
+ 2.93666506e-15 2.08424536e-15]
+EOM-CCSD root 0 E = 0.3094227213045508  qpwt = 0.962401  conv = True
+EOM-CCSD root 1 E = 0.4010366378322315  qpwt = 0.96537  conv = True
+EOM-CCSD root 2 E = 0.6113465436860339  qpwt = 0.986506  conv = True
+EOM-CCSD root 3 E = 1.092894186432473  qpwt = 0.000644987  conv = True
+EOM-CCSD root 4 E = 1.094268716750062  qpwt = 0.241121  conv = True
+EOM-CCSD root 5 E = 1.116799733836423  qpwt = 3.83664e-29  conv = True
+EOM-CCSD root 6 E = 1.175217589733413  qpwt = 0.0157137  conv = True
+EOM-CCSD root 7 E = 1.179982955836514  qpwt = 0.000176324  conv = True
+EOM-CCSD root 8 E = 1.186983770685882  qpwt = 0.0335765  conv = True
+EOM-CCSD root 9 E = 1.213281227706135  qpwt = 2.41287e-26  conv = True
+    CPU time for EOM-CCSD     18.84 sec, wall time      2.30 sec
