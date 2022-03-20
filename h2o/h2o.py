@@ -104,6 +104,8 @@ def test():
     #print('V',V)
     print('final excitation energies',np.sort(eig.real)+e)
     #print('FCI excitation energies',fci_levels.real)
-    #print('eigenvector',aval[0])
+
+    print('eigenvector 11',aval[10])
+    print('eigenvector 13',aval[12])
 if __name__== "__main__":
     test()
