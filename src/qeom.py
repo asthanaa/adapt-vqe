@@ -639,3 +639,93 @@ def createops_eefullwithI(no,nia,nib,nva,nvb,reference_ket):
         spmat_ops.append(transforms.get_sparse_operator(item, n_qubits = nia+nib+nva+nvb))
     return spmat_ops
 
+def ibm(op,hamiltonian,reference_ket,e,v):
+# {{{
+    M=np.zeros((len(op),len(op)))
+    Q=np.zeros((len(op),len(op)))
+    V=np.zeros((len(op),len(op)))
+    W=np.zeros((len(op),len(op)))
+    Hmat=np.zeros((len(op)*2,len(op)*2))
+    S=np.zeros((len(op)*2,len(op)*2))
+    for i in range(len(op)):
+        for j in range(len(op)):
+            #mat=op[i].transpose().conj().dot(barH.dot(op[j]))
+            mat1=comm3(op[i].transpose().conj(),hamiltonian,op[j])
+            M[i,j]=expvalue(v.transpose().conj(),mat1,v)[0,0]
+            mat2=comm3(op[i].transpose().conj(),hamiltonian,op[j].transpose().conj())
+            Q[i,j]=-expvalue(v.transpose().conj(),mat2,v)[0,0]
+            mat3=comm2(op[i].transpose().conj(),op[j])
+            V[i,j]=expvalue(v.transpose().conj(),mat3,v)[0,0]
+            mat4=comm2(op[i].transpose().conj(),op[j].transpose().conj())
+            W[i,j]=-expvalue(v.transpose().conj(),mat4,v)[0,0]
+    Hmat=np.bmat([[M,Q],[Q.conj(),M.conj()]])
+    S=np.bmat([[V,W],[-W.conj(),-V.conj()]])
+    #Diagonalize ex operator-> eigenvalues are excitation energies
+    eig,aval=scipy.linalg.eig(Hmat,S)
+    #print('W',W)
+    #print('final excitation energies',np.sort(eig.real)+e)
+    print('final excitation energies',np.sort(eig.real))
+    idx = eig.argsort()
+    eig = eig[idx]
+    aval = aval[:, idx]
+
+    ind_vi = 0
+    for ei in range(len(eig)):
+        if eig[ei] > 0:
+            print("qEOM State %4i: %12.8f au Gap:%12.8f" %(ind_vi,eig[ei]+e,eig[ei]))
+            ind_vi += 1
+
+# }}}
+
+def qse(op,hamiltonian,reference_ket,e,v,E_nuc):
+# {{{
+    M=np.zeros((len(op),len(op)))
+    V=np.zeros((len(op),len(op)))
+    for i in range(len(op)):
+        for j in range(len(op)):
+            #mat=op[i].transpose().conj().dot(barH.dot(op[j]))
+            mat1=expvalue(op[i].transpose().conj(),hamiltonian,op[j])
+            mat1=scipy.sparse.csr_matrix(mat1)
+            M[i,j]=expvalue(v.transpose().conj(),mat1,v)[0,0]
+            mat3=op[i].transpose().conj().dot(op[j])
+            V[i,j]=expvalue(v.transpose().conj(),mat3,v)[0,0]
+    eig,aval=scipy.linalg.eig(M,V)
+    #print('V',V)
+    #print('final excitation energies',(np.sort(eig.real)+E_nuc-e)*27.2114)
+    print('final excitation energies',(np.sort(eig.real)+E_nuc-e))
+    #print('eigenvector 1st',aval[0])
+    idx = eig.argsort()
+    eig = eig[idx]
+    aval = aval[:, idx]
+
+    for ei in range(len(eig)):
+        print("QSE   State %4i: %12.8f au Gap:%12.8f" %(ei,eig[ei]+E_nuc,eig[ei]+E_nuc-e))
+# }}}
+
+def sceom(op,barH,barS2,reference_ket,e):
+# {{{
+    Hmat =np.zeros((len(op),len(op)))
+    S2mat=np.zeros((len(op),len(op)))
+    #V=np.zeros((len(op),len(op)))
+    for i in range(len(op)):
+        for j in range(len(op)):
+            #mat=op[i].transpose().conj().dot(barH.dot(op[j]))
+            mat=comm3(op[i].transpose().conj(),barH,op[j])
+            s2mat=comm3(op[i].transpose().conj(),barS2,op[j])
+            #print(mat.toarray())
+            Hmat[i,j] =expvalue(reference_ket.transpose().conj(),mat,reference_ket)[0,0].real
+            S2mat[i,j]=expvalue(reference_ket.transpose().conj(),s2mat,reference_ket)[0,0].real
+            #mat3=qeom.comm2(op[i].transpose().conj(),op[j])
+            #V[i,j]=qeom.expvalue(reference_ket.transpose().conj(),mat3,reference_ket)[0,0]
+    #Diagonalize ex operator-> eigenvalues are excitation energies
+    eig,aval=scipy.linalg.eig(Hmat)
+    print('final excitation energies',np.sort(eig.real))
+    idx = eig.argsort()
+    eig = eig[idx]
+    aval = aval[:, idx]
+
+    for ei in range(len(eig)):
+        S2 = aval[:,ei].conj().T.dot(S2mat.dot(aval[:,ei]))
+        print("SCEOM State %4i: %12.8f au Gap:%12.8f <S2>: %12.8f" %(ei,eig[ei]+e,eig[ei],S2))
+# }}}
+
