@@ -1,0 +1,19 @@
+How to calculate EE/IP/EA for example h2o molecule
+1. in folder h2o-
+ python h2o.py (this file runs sceom code)- check line 77. If it is
+   createop_ipfull - it will calculate IPs
+   createop_eafull - it will calculate EAs
+   createop_eefull - it will calculate EEs
+values are in Hartrees. Printing full excited states energy at the moment. 
+2. in folder h2o
+ python ibm_paper.py runs qeom as it is in the paper. 
+ line 77 takes care of excited manifold as before. 
+ print contain redundant excitation energies in the first half. Start
+considering the energies in the second half. (call me in case this is
+confusing)
+3. in folder h2o
+ python qse.py runs qse (there are several versions of qse)
+this code runs qse that is diagonalization of H in the space of single and
+doubly excited manifold.
+
+

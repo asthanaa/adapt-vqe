@@ -17,7 +17,7 @@ import qeom
 from scipy.sparse.linalg import eigs
 
 def test():
-    r =0.7
+    r =2.0
     geometry = [('H', (0,0,0)), ('H', (0,0,1*r))]
 
 
@@ -64,7 +64,7 @@ def test():
     #pyscf.molden.from_mo(mol, "full.molden", sq_ham.C)
 
     #   Francesco, change this to singlet_GSD() if you want generalized singles and doubles
-    pool = operator_pools.singlet_SD()
+    pool = operator_pools.singlet_GSD()
     pool.init(n_orb, n_occ_a=n_a, n_occ_b=n_b, n_vir_a=n_orb-n_a, n_vir_b=n_orb-n_b)
     for i in range(pool.n_ops):
         print(pool.get_string_for_term(pool.fermi_ops[i]))
@@ -101,8 +101,11 @@ def test():
             V[i,j]=qeom.expvalue(v.transpose().conj(),mat3,v)[0,0]
     eig,aval=scipy.linalg.eig(M,V)
     print('V',V)
+
     print('final excitation energies',np.sort(eig.real)+E_nuc)
-    print('eigenvector 1st',aval[0])
+    print('final excited states',np.sort(eig.real)+E_nuc-e)
+    #print('eigenvector 1st',aval[0])
+
     #print('FCI excitation energies',fci_levels.real)
 if __name__== "__main__":
     test()

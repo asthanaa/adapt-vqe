@@ -116,6 +116,7 @@ def adapt_vqe(hamiltonian_op, pool, reference_ket,
         #ansatz_mat gives matrix form of a^a operators acting on 4 qubits. par*ansatz_mat[i] 
         #print('ansatz_mat',ansatz_mat[0].toarray())
         #exit()
+
         trial_model = tUCCSD(hamiltonian, ansatz_mat, reference_ket, parameters)
 
 
