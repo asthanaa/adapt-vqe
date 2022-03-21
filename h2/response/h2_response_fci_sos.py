@@ -33,6 +33,14 @@ def test(prop_list):
                H            0.375000000000     0.750000000000     0.324759526419 
                '''
 
+    #geometry = '''
+    #           O     -0.028962160801    -0.694396279686    -0.049338350190
+    #           O      0.028962160801     0.694396279686    -0.049338350190
+    #           H      0.350498145881    -0.910645626300     0.783035421467
+    #           H     -0.350498145881     0.910645626300     0.783035421467
+    #           '''
+
+
     # distorted (H2)2 --> to check symmetry of linear response function for exact wavefunction!
     #geometry = '''
     #           H            0.000000000000    -0.750000000000    -0.324759526419
@@ -42,9 +50,13 @@ def test(prop_list):
     #           '''
 
     #geometry = '''
-    # O            0.059724787792     0.052257861912     0.000000000000   
-    # H            0.059724787792    -1.147742138088     0.000000000000   
-    # H           -1.007600511112     0.318371947072     0.000000000000   
+    # #O            0.059724787792     0.052257861912     0.000000000000   
+    # #H            0.059724787792    -1.147742138088     0.000000000000   
+    # #H           -1.007600511112     0.318371947072     0.000000000000   
+    # # distorted geometry of h2o
+    #  O            0.043340048199     0.042342768297     0.000000000000   
+    #  H            0.043340048199    -0.914657231703     0.000000000000  
+    #  H           -0.731178064104     0.242646771541     0.000000000000 
     # '''
 
     charge = 0
@@ -95,19 +107,23 @@ def test(prop_list):
   
     num_states = 4**n_orb 
     index_states = [] 
+    S2_states = [] 
     [e,v] = scipy.sparse.linalg.eigsh(hamiltonian_arr,num_states,which='SA',v0=reference_ket.todense())
     for ei in range(len(e)):
         S2 = v[:,ei].conj().T.dot(s2.dot(v[:,ei]))
+        S2_states.append(S2) 
         number = v[:,ei].conj().T.dot(number_op.dot(v[:,ei]))
-        if np.round(number.real, 3) == n_a + n_b and ei !=0:
+        #if np.round(number.real, 3) == n_a + n_b and ei !=0 and np.round(S2.real, 3) == 0:
+        if np.round(number.real, 3) == n_a + n_b and ei !=0 :
             index_states.append(ei) 
         print(" State %4i: %12.8f au  <S2>: %12.8f" %(ei,e[ei]+E_nuc,S2))
 
     print('index_states: ', index_states)
     ex_states = np.zeros((num_states))
     for state in index_states:
-        ex_states[state] = e[state]-e[0]
-    print('ex_states', ex_states)
+        if state != 0:
+            ex_states[state] = e[state]-e[0]
+    #print('ex_states', ex_states)
 
      
     # reading electric dipole integrals
@@ -175,6 +191,7 @@ def test(prop_list):
     #                        + < 0 | Y | i > < i | X | 0 > / (omega + omega_i) 
     cart = ['X', 'Y', 'Z']
     polar = {}
+    OS = {}
     for x in range(3):
         for y in range(3):
             key = cart[x] + cart[y]
@@ -192,13 +209,21 @@ def test(prop_list):
                     term2 *= (1/(omega + ex_states[state]))
 
                     term = term1 - term2
-                    #print(term) 
                     polar[key].append(term)
 
             polar[key] = -1.0 * sum(polar[key]).real
-
-
+    OS = []
+    num_OS_states = 15
+    for state in index_states[:num_OS_states]:
+        termx  =  v[:,0].transpose().conj().dot(fermi_dipole_mo_op[0].dot(v[:,state]))
+        termy  =  v[:,0].transpose().conj().dot(fermi_dipole_mo_op[1].dot(v[:,state]))
+        termz  =  v[:,0].transpose().conj().dot(fermi_dipole_mo_op[2].dot(v[:,state]))
+        term =  2.0/3.0 * ex_states[state] * (termx**2 + termy**2 + termz**2)
+        OS.append((term, np.abs(np.round(S2_states[state],3))))
+            
+             
     print('polarizability: ', polar)
+    print('OS: ', OS)
 
     if 'optrot' in prop_list:
         optrot = {}
@@ -223,7 +248,36 @@ def test(prop_list):
 
                 optrot[key] = sum(optrot[key]).real
 
-    print('optical rotation: ', optrot)
+        print('optical rotation: ', optrot)
+        RS = []
+        num_RS_states = 15
+        for state in index_states[:num_RS_states]:
+            term_mux  =  v[:,0].transpose().conj().dot(fermi_dipole_mo_op[0].dot(v[:,state]))
+            term_Lx   =  v[:,state].transpose().conj().dot(fermi_angmom_mo_op[0].dot(v[:,0])) 
+            #term_Lx_1   =  v[:,0].transpose().conj().dot(fermi_angmom_mo_op[0].dot(v[:,state]))
+            # term_Lx and term_Lx_1 are negatives of each other!
+
+            term_muy  =  v[:,0].transpose().conj().dot(fermi_dipole_mo_op[1].dot(v[:,state]))
+            term_Ly   =  v[:,state].transpose().conj().dot(fermi_angmom_mo_op[1].dot(v[:,0])) 
+
+            term_muz  =  v[:,0].transpose().conj().dot(fermi_dipole_mo_op[2].dot(v[:,state]))
+            term_Lz   =  v[:,state].transpose().conj().dot(fermi_angmom_mo_op[2].dot(v[:,0])) 
+
+            term =  term_mux*term_Lx + term_muy*term_Ly + term_muz*term_Lz
+            RS.append((term, np.abs(np.round(S2_states[state],3))))
+
+            '''
+            print('State: ', state)
+            print('term_mux: ', term_mux)
+            print('term_muy: ', term_muy)
+            print('term_muz: ', term_muz)
+
+            print('term_Lx: ', term_Lx)
+            print('term_Ly: ', term_Ly)
+            print('term_Lz: ', term_Lz)
+            '''
+        print('RS: ', RS)
+        print('ex_energies: ', ex_states[ex_states != 0][:15])
 
 if __name__== "__main__":
     test(['polar', 'optrot'])
