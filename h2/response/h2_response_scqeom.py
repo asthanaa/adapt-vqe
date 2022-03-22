@@ -242,6 +242,46 @@ def test(prop_list):
     #polar = final_rhs.dot(x_plus_x_dag)
     #print('polar: ', polar)
 
+    # Oscillator strength!
+    eig_val,eig_vec=scipy.linalg.eig(Hmat)
+    ex_energies =  eig_val.real
+    ex_vectors = []
+    for i in range(len(ex_energies)):
+        ex_vectors.append([eig_vec[:,i]])
+
+
+    OS = {}
+    num_OS_states = 15
+
+    for x in range(3):
+        shape0 = fermi_dipole_mo_op[x].shape[0]
+        OS[x] = []
+        is_all_zero = True
+        if shape0 > 1:
+            is_all_zero = False
+        if not is_all_zero:
+            for state in range(num_OS_states):
+                term = 0
+                for i in range(len(op)):
+                    coeff_i = ex_vectors[state][0][i]
+                    mat1 = fermi_dipole_mo_op[x].dot(op[i])*coeff_i
+                    term += qeom.expvalue(v.transpose().conj(),mat1,v)[0,0]
+                OS[x].append(term)
+        else:
+            OS[x].append(np.zeros(num_OS_states))
+
+    OS_final = []
+    for state in range(num_OS_states):
+        termx = OS[0][state]
+        termy = OS[1][state]
+        termz = OS[2][state]
+        term =  2.0/3.0 * ex_energies[state] * (termx**2 + termy**2 + termz**2)
+        OS_final.append((term, ex_energies[state]))
+
+    OS_final = sorted(OS_final, key=lambda x: x[1])
+    print('OS_final: ', OS_final)
+
+
     if 'optrot' in prop_list:
         rhs_vec_angmom_xyz = []
         x_minus_x_dag_angmom_xyz = []
@@ -270,6 +310,48 @@ def test(prop_list):
         #print('x_plus_x_dag_dip_xyz :', x_plus_x_dag_dip_xyz[0])
         #print('rhs_vec_angmom_xyz :', rhs_vec_angmom_xyz[0])
         #print('x_minus_x_dag_angmom_xyz :', x_minus_x_dag_angmom_xyz[0])
+
+        RS = {}
+        num_RS_states = 15
+
+        for x in range(3):
+            shape0_mu = fermi_dipole_mo_op[x].shape[0]
+            shape0_L = fermi_angmom_mo_op[x].shape[0]
+            RS[x] = []
+            is_all_zero = True
+            if shape0_mu > 1 and shape0_L > 1:
+                is_all_zero = False
+            if not is_all_zero:
+                for state in range(num_RS_states):
+                    term_mu = 0
+                    term_L = 0
+                    for i in range(len(op)):
+                        coeff_i = ex_vectors[state][0][i]
+                        mat1 = fermi_dipole_mo_op[x].dot(op[i])*coeff_i
+                        term_mu += qeom.expvalue(v.transpose().conj(),mat1,v)[0,0]
+                        mat1 = fermi_angmom_mo_op[x].dot(op[i])*coeff_i
+                        term_L += qeom.expvalue(v.transpose().conj(),mat1,v)[0,0]
+                    RS[x].append((term_mu, term_L))
+            else:
+                for i in range(num_RS_states):
+                    RS[x].append((0,0))
+
+        RS_final = []
+        for state in range(num_RS_states):
+            term_mux = RS[0][state][0]
+            term_Lx = RS[0][state][1]
+
+            term_muy = RS[1][state][0]
+            term_Ly = RS[1][state][1]
+
+            term_muz = RS[2][state][0]
+            term_Lz = RS[2][state][1]
+
+            term =  -1.0*(term_mux*term_Lx + term_muy*term_Ly + term_muz*term_Lz)
+            RS_final.append((term, ex_energies[state]))
+
+        RS_final = sorted(RS_final, key=lambda x: x[1])
+        print('RS_final: ', RS_final)
 
 if __name__== "__main__":
     test(['polar', 'optrot'])

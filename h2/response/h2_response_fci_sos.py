@@ -213,13 +213,16 @@ def test(prop_list):
 
             polar[key] = -1.0 * sum(polar[key]).real
     OS = []
-    num_OS_states = 15
+    num_OS_states = 35
+    print('v0: ', len(v[:,0]))
+    print('v1: ', len(v[:,1]))
+    print('dipole_mo_op: ', fermi_dipole_mo_op[2].shape)
     for state in index_states[:num_OS_states]:
         termx  =  v[:,0].transpose().conj().dot(fermi_dipole_mo_op[0].dot(v[:,state]))
         termy  =  v[:,0].transpose().conj().dot(fermi_dipole_mo_op[1].dot(v[:,state]))
         termz  =  v[:,0].transpose().conj().dot(fermi_dipole_mo_op[2].dot(v[:,state]))
         term =  2.0/3.0 * ex_states[state] * (termx**2 + termy**2 + termz**2)
-        OS.append((term, np.abs(np.round(S2_states[state],3))))
+        OS.append((term, np.abs(np.round(S2_states[state],3)), ex_states[state]))
             
              
     print('polarizability: ', polar)
@@ -250,7 +253,7 @@ def test(prop_list):
 
         print('optical rotation: ', optrot)
         RS = []
-        num_RS_states = 15
+        num_RS_states = 25
         for state in index_states[:num_RS_states]:
             term_mux  =  v[:,0].transpose().conj().dot(fermi_dipole_mo_op[0].dot(v[:,state]))
             term_Lx   =  v[:,state].transpose().conj().dot(fermi_angmom_mo_op[0].dot(v[:,0])) 
@@ -264,7 +267,7 @@ def test(prop_list):
             term_Lz   =  v[:,state].transpose().conj().dot(fermi_angmom_mo_op[2].dot(v[:,0])) 
 
             term =  term_mux*term_Lx + term_muy*term_Ly + term_muz*term_Lz
-            RS.append((term, np.abs(np.round(S2_states[state],3))))
+            RS.append((term, np.abs(np.round(S2_states[state],3)), ex_states[state]))
 
             '''
             print('State: ', state)
