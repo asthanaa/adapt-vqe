@@ -83,6 +83,7 @@ def test(prop_list):
     for i in range(pool.n_ops):
         print(pool.get_string_for_term(pool.fermi_ops[i]))
     [e,v,params,ansatz_mat] = vqe_methods.adapt_vqe(fermi_ham, pool, reference_ket, theta_thresh=1e-9)
+    print('len(pool): ', pool.n_ops)
 
     print(" Final ADAPT-VQE energy: %12.8f" %e)
     print(" <S^2> of final state  : %12.8f" %(v.conj().T.dot(s2.dot(v))[0,0].real))
@@ -91,29 +92,34 @@ def test(prop_list):
     #create operators single and double for each excitation
     op=qeom.createops_eefull(n_orb,n_a,n_b,n_orb-n_a,n_orb-n_b,reference_ket)
 
-    #transform H with e^{sigma}
-    barH=qeom.barH(params, ansatz_mat, hamiltonian)
-    print('barH based energy diff=0?',qeom.expvalue(reference_ket.transpose().conj(),barH,reference_ket)[0,0].real-e+E_nuc)
+    # just old code of sc-qeom for excitation energies
+    ###transform H with e^{sigma}
+    ##barH=qeom.barH(params, ansatz_mat, hamiltonian)
+    ##print('barH based energy diff=0?',qeom.expvalue(reference_ket.transpose().conj(),barH,reference_ket)[0,0].real-e+E_nuc)
 
-    #create ex operator
+    ###create ex operator
 
-    Hmat=np.zeros((len(op),len(op)))
-    V=np.zeros((len(op),len(op)))
-    for i in range(len(op)):
-        for j in range(len(op)):
-            mat=qeom.comm3(op[i].transpose().conj(),barH,op[j])
-            #print(mat.toarray())
-            Hmat[i,j]=qeom.expvalue(reference_ket.transpose().conj(),mat,reference_ket)[0,0].real
-    #Diagonalize ex operator-> eigenvalues are excitation energies
-    eig,aval=scipy.linalg.eig(Hmat)
-    ex_energies =  27.2114 * np.sort(eig.real)
-    ex_energies = np.array([i for i in ex_energies if i >0])
-    print('final excitation energies (adapt in qiskit ordering) in eV: ', ex_energies)
-    final_total_energies = np.sort(eig.real)+e
-    print('final total energies (adapt in qiskit ordering)', final_total_energies)
+    ##Hmat=np.zeros((len(op),len(op)))
+    ##V=np.zeros((len(op),len(op)))
+    ##for i in range(len(op)):
+    ##    for j in range(len(op)):
+    ##        mat=qeom.comm3(op[i].transpose().conj(),barH,op[j])
+    ##        #print(mat.toarray())
+    ##        Hmat[i,j]=qeom.expvalue(reference_ket.transpose().conj(),mat,reference_ket)[0,0].real
+    ###Diagonalize ex operator-> eigenvalues are excitation energies
+    ##eig,aval=scipy.linalg.eig(Hmat)
+    ##ex_energies =  27.2114 * np.sort(eig.real)
+    ##ex_vectors = []
+    ##for i in range(len(ex_energies)):
+    ##    if ex_energies[i] > 0:
+    ##        ex_vectors.append(aval[i])
+    ##ex_energies = np.array([i for i in ex_energies if i >0])
+    ##print('final excitation energies (adapt in qiskit ordering) in eV: ', ex_energies)
+    ##final_total_energies = np.sort(eig.real)+e
+    ##print('final total energies (adapt in qiskit ordering)', final_total_energies)
 
-
-    
+   
+ 
     # Response part now!
     # Christiansen's paper!
     # lets first do this using the q-eom approach first 
@@ -242,6 +248,47 @@ def test(prop_list):
     #print('rhs_vec_dip_xyz[z]: ', rhs_vec_dip_xyz[2])
     #print('response_amp_dip_xyz[z]: ', response_amp_dip_xyz[2])
 
+    # Oscillator strength!
+    eig_val,eig_vec=scipy.linalg.eig(Hmat,S)
+    ex_energies =  np.sort(eig_val.real)
+    ex_vectors = []
+    for i in range(len(ex_energies)):
+        if ex_energies[i] > 0:
+            ex_vectors.append([eig_vec[:,i]])
+    #print('ex_vectors: ', ex_vectors)  
+    ex_energies = np.array([i for i in ex_energies if i >0])
+
+
+    OS = {}
+    num_OS_states = 15
+
+    for x in range(3):
+        shape0 = fermi_dipole_mo_op[x].shape[0] 
+        OS[x] = []
+        is_all_zero = True
+        if shape0 > 1:
+            is_all_zero = False
+        if not is_all_zero:
+            for state in range(num_OS_states):
+                term = 0
+                for i in range(len(op)):
+                    coeff_i = ex_vectors[state][0][i]
+                    mat1 = fermi_dipole_mo_op[x].dot(op[i])*coeff_i
+                    term += qeom.expvalue(v.transpose().conj(),mat1,v)[0,0]
+                OS[x].append(term)     
+        else:
+            OS[x].append(np.zeros(num_OS_states))
+
+    OS_final = []
+    for state in range(num_OS_states):
+        termx = OS[0][state]
+        termy = OS[1][state]
+        termz = OS[2][state]
+        term =  2.0/3.0 * ex_energies[state] * (termx**2 + termy**2 + termz**2)
+        OS_final.append(term)
+
+    print('OS_final: ', OS_final)
+
     if 'optrot' in prop_list:
         optrot = {}
         response_amp_angmom_xyz = [] 
@@ -250,7 +297,11 @@ def test(prop_list):
             dip_up = np.zeros((len(op)))
             dip_down = np.zeros((len(op)))
             rhs_vec = np.zeros((2 * len(op)))
-            shape0 = fermi_angmom_mo_op[x].shape[0] 
+            #print('fermi_angmom_mo_op[x]: ', fermi_angmom_mo_op[x])
+            if isinstance(fermi_angmom_mo_op[x], list):
+                shape0 = 1 
+            else:
+                shape0 = fermi_angmom_mo_op[x].shape[0]
             is_all_zero = True
             if shape0 > 1:
                 is_all_zero = False
@@ -273,11 +324,11 @@ def test(prop_list):
             for y in range(3):
                 key = cart[x] + cart[y]
                 optrot[key] = -1.0 * rhs_vec_dip_xyz[x].dot(response_amp_angmom_xyz[y])
-        print('optrot: ', optrot) 
-        print('rhs_vec_dip_xyz: ', rhs_vec_dip_xyz[0])
-        print('response_amp_dip_xyz: ',  response_amp_dip_xyz[0])
-        print('rhs_vec_angmom_xyz: ', rhs_vec_angmom_xyz[0])
-        print('response_amp_angmom_xyz: ',  response_amp_angmom_xyz[0])
+        #print('optrot: ', optrot) 
+        #print('rhs_vec_dip_xyz: ', rhs_vec_dip_xyz[0])
+        #print('response_amp_dip_xyz: ',  response_amp_dip_xyz[0])
+        #print('rhs_vec_angmom_xyz: ', rhs_vec_angmom_xyz[0])
+        #print('response_amp_angmom_xyz: ',  response_amp_angmom_xyz[0])
         
 
 
