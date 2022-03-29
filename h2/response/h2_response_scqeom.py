@@ -117,7 +117,8 @@ def test(prop_list):
             #V[i,j]=qeom.expvalue(reference_ket.transpose().conj(),mat3,reference_ket)[0,0]
     #Diagonalize ex operator-> eigenvalues are excitation energies
     eig,aval=scipy.linalg.eig(Hmat)
-    ex_energies =  27.2114 * np.sort(eig.real)
+    #ex_energies =  27.2114 * np.sort(eig.real)
+    ex_energies =  np.sort(eig.real)
     ex_energies = np.array([i for i in ex_energies if i >0])
     print('final excitation energies (adapt in qiskit ordering) in eV: ', ex_energies)
     final_total_energies = np.sort(eig.real)+e
@@ -245,17 +246,19 @@ def test(prop_list):
     # Oscillator strength!
     eig_val,eig_vec=scipy.linalg.eig(Hmat)
     ex_energies =  eig_val.real
-    ex_vectors = []
+    ex_data = []
     for i in range(len(ex_energies)):
-        ex_vectors.append([eig_vec[:,i]])
+        ex_data.append([eig_vec[:,i]])
 
 
     OS = {}
-    num_OS_states = 15
+    num_OS_states = len(ex_energies)
+    OS_tmp = {}
 
     for x in range(3):
         shape0 = fermi_dipole_mo_op[x].shape[0]
         OS[x] = []
+        OS_tmp[x] = []
         is_all_zero = True
         if shape0 > 1:
             is_all_zero = False
@@ -263,12 +266,25 @@ def test(prop_list):
             for state in range(num_OS_states):
                 term = 0
                 for i in range(len(op)):
-                    coeff_i = ex_vectors[state][0][i]
+                    coeff_i = ex_data[state][0][i]
                     mat1 = fermi_dipole_mo_op[x].dot(op[i])*coeff_i
                     term += qeom.expvalue(v.transpose().conj(),mat1,v)[0,0]
                 OS[x].append(term)
+                OS_tmp[x].append((term, ex_energies[state]))
         else:
             OS[x].append(np.zeros(num_OS_states))
+
+    '''
+    print('OS[0]: \n\n')
+    for items in OS_tmp[0]:
+        print(items)
+    print('OS[1]: \n\n')
+    for items in OS_tmp[1]:
+        print(items)
+    print('OS[2]: \n\n')
+    for items in OS_tmp[2]:
+        print(items)
+    '''
 
     OS_final = []
     for state in range(num_OS_states):
@@ -312,7 +328,7 @@ def test(prop_list):
         #print('x_minus_x_dag_angmom_xyz :', x_minus_x_dag_angmom_xyz[0])
 
         RS = {}
-        num_RS_states = 15
+        num_RS_states =  len(ex_energies)
 
         for x in range(3):
             shape0_mu = fermi_dipole_mo_op[x].shape[0]
@@ -326,15 +342,33 @@ def test(prop_list):
                     term_mu = 0
                     term_L = 0
                     for i in range(len(op)):
-                        coeff_i = ex_vectors[state][0][i]
+                        coeff_i = ex_data[state][0][i]
                         mat1 = fermi_dipole_mo_op[x].dot(op[i])*coeff_i
                         term_mu += qeom.expvalue(v.transpose().conj(),mat1,v)[0,0]
                         mat1 = fermi_angmom_mo_op[x].dot(op[i])*coeff_i
                         term_L += qeom.expvalue(v.transpose().conj(),mat1,v)[0,0]
-                    RS[x].append((term_mu, term_L))
+                    RS[x].append((term_mu, term_L, ex_energies[state]))
             else:
                 for i in range(num_RS_states):
                     RS[x].append((0,0))
+
+        
+        for x in range(3):
+            RS[x] = sorted(RS[x], key=lambda x: x[2]) 
+       
+        '''
+        print('RS[0]\n')
+        for items in RS[0]:
+            print(items)
+
+        print('RS[1]\n')
+        for items in RS[1]:
+            print(items)
+
+        print('RS[1]\n')
+        for items in RS[2]:
+            print(items)
+        '''
 
         RS_final = []
         for state in range(num_RS_states):
