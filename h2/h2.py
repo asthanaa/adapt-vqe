@@ -23,6 +23,7 @@ def test():
     charge = 0
     spin = 0
     basis = '6-31g'
+    #basis = 'sto-3g'
 
     [n_orb, n_a, n_b, h, g, mol, E_nuc, E_scf, C, S] = pyscf_helper.init(geometry,charge,spin,basis)
 
@@ -104,9 +105,14 @@ def test():
             V[i,j]=qeom.expvalue(reference_ket.transpose().conj(),mat3,reference_ket)[0,0]
     #Diagonalize ex operator-> eigenvalues are excitation energies
     eig,aval=scipy.linalg.eig(Hmat)
-    print('V',V)
-    print('final excitation energies',np.sort(eig.real)+e)
-    #print('FCI excitation energies',fci_levels.real)
-    print('eigenvector',aval[0])
+    ex_energies =  27.2114 * np.sort(eig.real)
+    ex_energies = np.array([i for i in ex_energies if i >0])
+    print('final excitation energies in eV: ', ex_energies)
+    final_total_energies = np.sort(eig.real)+e
+    print('final total energies (hartree)', final_total_energies)
+    #print('V',V)
+    #print('final excitation energies',np.sort(eig.real)+e)
+    ##print('FCI excitation energies',fci_levels.real)
+    #print('eigenvector',aval[0])
 if __name__== "__main__":
     test()
