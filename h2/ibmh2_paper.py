@@ -99,6 +99,8 @@ def test():
     W=np.zeros((len(op),len(op)))
     Hmat=np.zeros((len(op)*2,len(op)*2))
     S=np.zeros((len(op)*2,len(op)*2))
+    print('op[i]: ', op[i].toarray())
+    print('op[i].shape: ', op[i].toarray().shape)
     for i in range(len(op)):
         for j in range(len(op)):
             #mat=op[i].transpose().conj().dot(barH.dot(op[j]))

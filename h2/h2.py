@@ -95,6 +95,7 @@ def test():
 
     Hmat=np.zeros((len(op),len(op)))
     V=np.zeros((len(op),len(op)))
+    print('op[i]: ', op[i].toarray())
     for i in range(len(op)):
         for j in range(len(op)):
             #mat=op[i].transpose().conj().dot(barH.dot(op[j]))
