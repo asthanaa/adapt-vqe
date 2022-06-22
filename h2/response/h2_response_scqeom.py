@@ -20,6 +20,7 @@ import pickle
 
 def test(prop_list):
     dist = np.arange(0.2,2.70,0.1)
+    #dist = [0.7]
     results = []
     for r in dist:
         geometry = [('H', (0,0,0)), ('H', (0,0,1*r))]
@@ -120,6 +121,7 @@ def test(prop_list):
                 #mat3=qeom.comm2(op[i].transpose().conj(),op[j])
                 #V[i,j]=qeom.expvalue(reference_ket.transpose().conj(),mat3,reference_ket)[0,0]
         #Diagonalize ex operator-> eigenvalues are excitation energies
+        print('M: ', Hmat)
         eig,aval=scipy.linalg.eig(Hmat)
         #ex_energies =  27.2114 * np.sort(eig.real)
         ex_energies =  np.sort(eig.real)
@@ -228,6 +230,7 @@ def test(prop_list):
                     mat = qeom.comm2(bar_dipole_mo[x], op[i])
                     final_rhs[i]= qeom.expvalue(reference_ket.transpose().conj(),mat,reference_ket)[0,0].real
             rhs_vec_dip_xyz.append(final_rhs)
+            print('final_rhs: ', final_rhs)
             final_rhs_one = 2*omega*final_rhs
             x_minus_x_dag = linalg.solve(Hmat_sq, final_rhs_one) 
             # x + xdag = Hmat * (x - xdag)/omega

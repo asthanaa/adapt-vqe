@@ -18,12 +18,12 @@ from scipy import linalg
 import pickle
 
 def test(prop_list):
-    dist_h2 = np.arange(0.2,2.70,0.1)
-    #dist_h2 = np.arange(1.75,3.00,0.1)
-    #dist_h2 = [0.7]
+    dist = np.arange(1.5,3.70,0.1)
+    dist = np.arange(2.2,4.2,0.025)
     results = []
-    for r in dist_h2:
-        geometry = [('H', (0,0,0)), ('H', (0,0,1*r))]
+    for r in dist:
+        #geometry = [('H', (0,0,0)), ('H', (0,0,1*r))]
+        geometry = [('Li', (0,0,0)), ('H', (0,0,1*r))]
  
 
         #geometry = '''
@@ -74,8 +74,8 @@ def test(prop_list):
         basis = 'sto-3g'
         #basis = 'ano-rcc-mb'
 
-        #[n_orb, n_a, n_b, h, g, mol, E_nuc, E_scf, C, S] = pyscf_helper.init(geometry,charge,spin,basis, n_frzn_occ=1, n_act=6)
-        [n_orb, n_a, n_b, h, g, mol, E_nuc, E_scf, C, S] = pyscf_helper.init(geometry,charge,spin,basis)
+        [n_orb, n_a, n_b, h, g, mol, E_nuc, E_scf, C, S] = pyscf_helper.init(geometry,charge,spin,basis, n_frzn_occ=1, n_act=5)
+        #[n_orb, n_a, n_b, h, g, mol, E_nuc, E_scf, C, S] = pyscf_helper.init(geometry,charge,spin,basis)
 
         print(" n_orb: %4i" %n_orb)
         print(" n_a  : %4i" %n_a)
@@ -164,7 +164,6 @@ def test(prop_list):
             else:
                 fermi_dipole_mo_op.append([])
         print('fermi_dipole_mo_op: ', fermi_dipole_mo_op)
-
         if 'optrot' in prop_list:
             # make angular momentum integrals!
             # reading electric dipole integrals
@@ -247,6 +246,7 @@ def test(prop_list):
 
         if 'optrot' in prop_list:
             optrot = {}
+            RS = []
             for x in range(3):
                 for y in range(3):
                     key = cart[x] + cart[y]
@@ -259,6 +259,7 @@ def test(prop_list):
                             term2 = 0
                             if not isinstance(fermi_dipole_mo_op[x], list) and not isinstance(fermi_angmom_mo_op[y], list):
                                 term1  =  v[:,0].transpose().conj().dot(fermi_dipole_mo_op[x].dot(v[:,state]))
+                                print('x: y: ', x, y)
                                 term1 *= v[:,state].transpose().conj().dot(fermi_angmom_mo_op[y].dot(v[:,0]))
                                 term1 *= (1/(omega - ex_states[state]))
 
@@ -270,7 +271,6 @@ def test(prop_list):
                             optrot[key].append(term)
 
                     optrot[key] = sum(optrot[key]).real
-
             print('optical rotation: ', optrot)
             RS = []
             num_RS_states = len(index_states)
@@ -299,35 +299,39 @@ def test(prop_list):
                 #RS.append((term, np.abs(np.round(S2_states[state],3)), ex_states[state]))
                 RS.append((term, ex_states[state]))
 
-                '''
-                print('State: ', state)
-                print('term_mux: ', term_mux)
-                print('term_muy: ', term_muy)
-                print('term_muz: ', term_muz)
+                #print('State: ', state)
+                #print('term_mux: ', term_mux)
+                #print('term_muy: ', term_muy)
+                #print('term_muz: ', term_muz)
 
-                print('term_Lx: ', term_Lx)
-                print('term_Ly: ', term_Ly)
-                print('term_Lz: ', term_Lz)
-                '''
+                #print('term_Lx: ', term_Lx)
+                #print('term_Ly: ', term_Ly)
+                #print('term_Lz: ', term_Lz)
             print('RS: ', RS)
             #print('ex_energies: ', ex_states[ex_states != 0][:15])
             print('ex_energies: ', ex_states[ex_states != 0])
         temp = {}
         temp['polarizability'] = polar
         temp['isotropic_polarizability'] = 1/3.0 * (polar['XX'] + polar['YY'] + polar['ZZ'])
-        temp['rotation(589nm)'] = optrot
-        temp['trace_rotation(589nm)'] = optrot['XX'] + optrot['YY'] + optrot['ZZ']
         temp['OS'] = OS
-        temp['RS'] = RS
+        if 'optrot' in prop_list:
+            temp['rotation(589nm)'] = optrot
+            temp['trace_rotation(589nm)'] = optrot['XX'] + optrot['YY'] + optrot['ZZ']
+            temp['RS'] = RS
+        else:
+            temp['rotation(589nm)'] = 0
+            temp['trace_rotation(589nm)'] = 0 
+            temp['RS'] = 0
         results.append(temp)
     return results
 
 if __name__== "__main__":
-    results = test(['polar', 'optrot'])
+    #results = test(['polar', 'optrot'])
+    results = test(['polar'])
     #print('results: ', results)
     #np.savetxt('h2_fci_sos.txt', results)
-    output = open('h2_2_fci_sos.dat', 'wb')
+    output = open('lih_fci_sos.dat', 'wb')
     pickle.dump(results, output) # converts array to binary and writes to output
-    input_ = open('h2_2_fci_sos.dat', 'rb')
+    input_ = open('lih_fci_sos.dat', 'rb')
     results = pickle.load(input_) # Reads 
     print('results after reading: ', results)

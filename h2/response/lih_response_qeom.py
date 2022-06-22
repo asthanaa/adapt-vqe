@@ -19,12 +19,13 @@ from scipy import linalg
 import pickle
 
 def test(prop_list):
-    dist = np.arange(0.2,2.70,0.1)
+    dist = np.arange(1.5,3.70,0.1)
+    dist = np.arange(2.2,4.2,0.025)
     #dist = [0.7]
     results = []
     for r in dist:
 
-        geometry = [('H', (0,0,0)), ('H', (0,0,1*r))]
+        geometry = [('Li', (0,0,0)), ('H', (0,0,1*r))]
          
         #geometry = '''
         #           H
@@ -46,7 +47,8 @@ def test(prop_list):
         #basis = '6-31g'
         basis = 'sto-3g'
 
-        [n_orb, n_a, n_b, h, g, mol, E_nuc, E_scf, C, S] = pyscf_helper.init(geometry,charge,spin,basis)
+        #[n_orb, n_a, n_b, h, g, mol, E_nuc, E_scf, C, S] = pyscf_helper.init(geometry,charge,spin,basis)
+        [n_orb, n_a, n_b, h, g, mol, E_nuc, E_scf, C, S] = pyscf_helper.init(geometry,charge,spin,basis, n_frzn_occ=1, n_act=5)
 
         print(" n_orb: %4i" %n_orb)
         print(" n_a  : %4i" %n_a)
@@ -419,18 +421,23 @@ def test(prop_list):
         temp = {}
         temp['polarizability'] = polar
         temp['isotropic_polarizability'] = 1/3.0 * (polar['XX'] + polar['YY'] + polar['ZZ'])
-        temp['rotation(589nm)'] = optrot
-        temp['trace_rotation(589nm)'] = optrot['XX'] + optrot['YY'] + optrot['ZZ']
         temp['OS'] = OS_final
-        temp['RS'] = RS_final
+        if 'optrot' in prop_list:
+            temp['rotation(589nm)'] = optrot
+            temp['trace_rotation(589nm)'] = optrot['XX'] + optrot['YY'] + optrot['ZZ']
+            temp['RS'] = RS
+        else:
+            temp['rotation(589nm)'] = 0
+            temp['trace_rotation(589nm)'] = 0 
+            temp['RS'] = 0
         results.append(temp)
     return results
 
 if __name__== "__main__":
-    results = test(['polar', 'optrot'])
+    results = test(['polar'])
     print('results: ', results)
-    output = open('h2_qeom.dat', 'wb')
+    output = open('lih_qeom.dat', 'wb')
     pickle.dump(results, output) # converts array to binary and writes to output
-    input_ = open('h2_qeom.dat', 'rb')
+    input_ = open('lih_qeom.dat', 'rb')
     results = pickle.load(input_) # Reads 
     print('results after reading: ', results)
