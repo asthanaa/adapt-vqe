@@ -19,19 +19,12 @@ from scipy import linalg
 import pickle
 
 def test(prop_list):
-    dist = np.arange(1.5,3.70,0.1)
-    dist = np.arange(2.2,4.2,0.025)
-    #dist = [0.7]
-    #dist_1 = np.arange(2.2,2.651,0.025)
-    #dist_1 = np.append(dist_1,np.arange(2.652, 2.677, 0.008))
-    #dist_1 = np.append(dist_1,np.arange(2.67620, 2.67690, 0.0002))
-    #dist_1 = np.append(dist_1,2.67695)
-    #dist = np.arange(2.725,3.31,0.025)
-    #dist = [3.40]
+    #dist = np.arange(0.2,2.70,0.1)
+    dist = [0.7]
     results = []
     for r in dist:
 
-        geometry = [('Li', (0,0,0)), ('H', (0,0,1*r))]
+        geometry = [('H', (0,0,0)), ('H', (0,0,1*r))]
          
         #geometry = '''
         #           H
@@ -53,8 +46,7 @@ def test(prop_list):
         #basis = '6-31g'
         basis = 'sto-3g'
 
-        #[n_orb, n_a, n_b, h, g, mol, E_nuc, E_scf, C, S] = pyscf_helper.init(geometry,charge,spin,basis)
-        [n_orb, n_a, n_b, h, g, mol, E_nuc, E_scf, C, S] = pyscf_helper.init(geometry,charge,spin,basis, n_frzn_occ=1, n_act=5)
+        [n_orb, n_a, n_b, h, g, mol, E_nuc, E_scf, C, S] = pyscf_helper.init(geometry,charge,spin,basis)
 
         print(" n_orb: %4i" %n_orb)
         print(" n_a  : %4i" %n_a)
@@ -97,6 +89,7 @@ def test(prop_list):
         for i in range(pool.n_ops):
             print(pool.get_string_for_term(pool.fermi_ops[i]))
         [e,v,params,ansatz_mat] = vqe_methods.adapt_vqe(fermi_ham, pool, reference_ket, theta_thresh=1e-9)
+        e_electronic = e - E_nuc
         print('len(pool): ', pool.n_ops)
 
         print(" Final ADAPT-VQE energy: %12.8f" %e)
@@ -104,7 +97,9 @@ def test(prop_list):
 
 
         #create operators single and double for each excitation
-        op=qeom.createops_eefull(n_orb,n_a,n_b,n_orb-n_a,n_orb-n_b,reference_ket)
+        #op=qeom.createops_eefull(n_orb,n_a,n_b,n_orb-n_a,n_orb-n_b,reference_ket)
+        op=qeom.createops_eefullwithI(n_orb,n_a,n_b,n_orb-n_a,n_orb-n_b,reference_ket)
+        print('len(op): ', len(op))
 
         # Response part now!
         # Christiansen's paper!
@@ -119,26 +114,36 @@ def test(prop_list):
         S=np.zeros((len(op)*2,len(op)*2))
         for i in range(len(op)):
             for j in range(len(op)):
-                mat1=qeom.comm3(op[i],hamiltonian,op[j].transpose().conj())
+                #mat1=qeom.comm3(op[i],hamiltonian,op[j].transpose().conj())
+                #mat1=op[i].dot(hamiltonian.dot(op[j].transpose().conj()))
+                mat1=qeom.expvalue(op[i].transpose().conj(),hamiltonian,op[j])
+                mat1=scipy.sparse.csr_matrix(mat1)
                 M[i,j]=qeom.expvalue(v.transpose().conj(),mat1,v)[0,0]
-                mat2=qeom.comm3(op[i],hamiltonian,op[j])
+                #mat2=qeom.comm3(op[i],hamiltonian,op[j])
+                #mat2=op[i].dot(hamiltonian.dot(op[j]))
+                mat2=qeom.expvalue(op[i],hamiltonian,op[j])
+                mat2=scipy.sparse.csr_matrix(mat2)
                 Q[i,j]=-qeom.expvalue(v.transpose().conj(),mat2,v)[0,0]
-                mat3=qeom.comm2(op[i],op[j].transpose().conj())
+                #mat3=qeom.comm2(op[i],op[j].transpose().conj())
+                mat3=op[i].dot(op[j].transpose().conj())
                 V[i,j]=qeom.expvalue(v.transpose().conj(),mat3,v)[0,0]
-                mat4=qeom.comm2(op[i],op[j])
+                #mat4=qeom.comm2(op[i],op[j])
+                mat4=op[i].dot(op[j])
                 W[i,j]=-qeom.expvalue(v.transpose().conj(),mat4,v)[0,0]
 
-        #print('M: ', M)
-        #print('Q: ', Q)
-        #print('V: ', V)
-        #print('W: ', W)
+        #M = M - e_electronic*V 
+        #Q = M - e_electronic*V 
+        print('M: ', M)
+        print('Q: ', Q)
+        print('V: ', V)
+        print('W: ', W)
         Hmat=np.bmat([[M,Q],[Q.conj(),M.conj()]])
         S=np.bmat([[V,W],[-W.conj(),-V.conj()]])
 
         eig,aval=scipy.linalg.eig(Hmat,S)
         ex_energies =  np.sort(eig.real)
-        ex_energies = np.array([i for i in ex_energies if i >0])
-        print('final excitation energies (adapt in qiskit ordering) in eV: ', ex_energies)
+        #ex_energies = np.array([i for i in ex_energies if i >0])
+        print('final excitation energies (adapt in qiskit ordering) in eV: ', ex_energies + E_nuc - e)
         final_total_energies = np.sort(eig.real)+e
         print('final total energies (adapt in qiskit ordering)', final_total_energies)
 
@@ -241,8 +246,6 @@ def test(prop_list):
                 polar[key] = rhs_vec_dip_xyz[x].dot(response_amp_dip_xyz[y])
 
         print('polarizability: ', polar)
-        print('response_amp_dip_xyz: ', response_amp_dip_xyz)
-        print('rhs_vec_dip_xyz: ', rhs_vec_dip_xyz)
 
         # Oscillator strength!
         eig_val,eig_vec=scipy.linalg.eig(Hmat,S)
@@ -427,23 +430,18 @@ def test(prop_list):
         temp = {}
         temp['polarizability'] = polar
         temp['isotropic_polarizability'] = 1/3.0 * (polar['XX'] + polar['YY'] + polar['ZZ'])
+        temp['rotation(589nm)'] = optrot
+        temp['trace_rotation(589nm)'] = optrot['XX'] + optrot['YY'] + optrot['ZZ']
         temp['OS'] = OS_final
-        if 'optrot' in prop_list:
-            temp['rotation(589nm)'] = optrot
-            temp['trace_rotation(589nm)'] = optrot['XX'] + optrot['YY'] + optrot['ZZ']
-            temp['RS'] = RS
-        else:
-            temp['rotation(589nm)'] = 0
-            temp['trace_rotation(589nm)'] = 0 
-            temp['RS'] = 0
+        temp['RS'] = RS_final
         results.append(temp)
     return results
 
 if __name__== "__main__":
-    results = test(['polar'])
+    results = test(['polar', 'optrot'])
     print('results: ', results)
-    #output = open('lih_qeom_2.dat', 'wb')
-    #pickle.dump(results, output) # converts array to binary and writes to output
-    #input_ = open('lih_qeom_2.dat', 'rb')
-    #results = pickle.load(input_) # Reads 
-    #print('results after reading: ', results)
+    output = open('h2_qeom.dat', 'wb')
+    pickle.dump(results, output) # converts array to binary and writes to output
+    input_ = open('h2_qeom.dat', 'rb')
+    results = pickle.load(input_) # Reads 
+    print('results after reading: ', results)

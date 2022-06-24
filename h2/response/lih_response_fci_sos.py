@@ -20,6 +20,12 @@ import pickle
 def test(prop_list):
     dist = np.arange(1.5,3.70,0.1)
     dist = np.arange(2.2,4.2,0.025)
+    dist = np.arange(2.652,2.677,0.004)
+    dist = np.append(dist, np.arange(2.67620,2.67690,.0002))
+    #dist = np.arange(2.6771,2.6800,0.0002)
+    #dist = np.append(dist, np.arange(2.6980,2.6999,.0002))
+    #dist = np.arange(3.409,3.424,0.002)
+    #dist = np.append(dist, 3.40750)
     results = []
     for r in dist:
         #geometry = [('H', (0,0,0)), ('H', (0,0,1*r))]
@@ -330,8 +336,8 @@ if __name__== "__main__":
     results = test(['polar'])
     #print('results: ', results)
     #np.savetxt('h2_fci_sos.txt', results)
-    output = open('lih_fci_sos.dat', 'wb')
+    output = open('lih_fci_sos_1.dat', 'wb')
     pickle.dump(results, output) # converts array to binary and writes to output
-    input_ = open('lih_fci_sos.dat', 'rb')
+    input_ = open('lih_fci_sos_1.dat', 'rb')
     results = pickle.load(input_) # Reads 
     print('results after reading: ', results)

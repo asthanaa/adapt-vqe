@@ -19,34 +19,27 @@ from scipy import linalg
 import pickle
 
 def test(prop_list):
-    dist = np.arange(1.5,3.70,0.1)
-    dist = np.arange(2.2,4.2,0.025)
+    dist = np.arange(0.2,2.70,0.1)
     #dist = [0.7]
-    #dist_1 = np.arange(2.2,2.651,0.025)
-    #dist_1 = np.append(dist_1,np.arange(2.652, 2.677, 0.008))
-    #dist_1 = np.append(dist_1,np.arange(2.67620, 2.67690, 0.0002))
-    #dist_1 = np.append(dist_1,2.67695)
-    #dist = np.arange(2.725,3.31,0.025)
-    #dist = [3.40]
+    dist = [2.67695]
+    dist = np.arange(2.2,2.651,0.025)
+    dist = np.arange(2.700,3.399,0.025)
     results = []
     for r in dist:
-
         geometry = [('Li', (0,0,0)), ('H', (0,0,1*r))]
-         
         #geometry = '''
         #           H
         #           H 1 {0}
         #           H 1 {1} 2 {2}
         #           H 3 {0} 1 {2} 2 {3}
         #           '''.format(0.75, 1.5, 90.0, 60.0)
-
+   
         #geometry = '''
         #           H            0.000000000000    -0.750000000000    -0.324759526419
         #           H           -0.375000000000    -0.750000000000     0.324759526419
         #           H            0.000000000000     0.750000000000    -0.324759526419
         #           H            0.375000000000     0.750000000000     0.324759526419
         #           '''
-
 
         charge = 0
         spin = 0
@@ -92,50 +85,49 @@ def test(prop_list):
         #pyscf.molden.from_mo(mol, "full.molden", sq_ham.C)
 
         #   Francesco, change this to singlet_GSD() if you want generalized singles and doubles
-        pool = operator_pools.singlet_GSD()
+        pool = operator_pools.singlet_SD()
         pool.init(n_orb, n_occ_a=n_a, n_occ_b=n_b, n_vir_a=n_orb-n_a, n_vir_b=n_orb-n_b)
         for i in range(pool.n_ops):
             print(pool.get_string_for_term(pool.fermi_ops[i]))
         [e,v,params,ansatz_mat] = vqe_methods.adapt_vqe(fermi_ham, pool, reference_ket, theta_thresh=1e-9)
-        print('len(pool): ', pool.n_ops)
 
         print(" Final ADAPT-VQE energy: %12.8f" %e)
         print(" <S^2> of final state  : %12.8f" %(v.conj().T.dot(s2.dot(v))[0,0].real))
 
+        #store FCI values for checking
+        #a,b=eigs(hamiltonian)
+        #fci_levels=a+E_nuc
 
         #create operators single and double for each excitation
         op=qeom.createops_eefull(n_orb,n_a,n_b,n_orb-n_a,n_orb-n_b,reference_ket)
+        #print('op[0] is',op[0])
+        #exit()
 
-        # Response part now!
-        # Christiansen's paper!
-        # lets first do this using the q-eom approach first 
-        # and then with the Ayush's approach later!
-        
-        M=np.zeros((len(op),len(op)))
-        Q=np.zeros((len(op),len(op)))
+        #transform H with e^{sigma}
+        barH=qeom.barH(params, ansatz_mat, hamiltonian)
+        #print("barH, H", barH,'\n\n',hamiltonian)
+        #a,b=eigs(barH)
+        #print('ex energy',a)
+        #print('reference state',reference_ket)
+        #print('energy 1',qeom.expvalue(v.transpose().conj(),hamiltonian,v))
+        print('barH based energy diff=0?',qeom.expvalue(reference_ket.transpose().conj(),barH,reference_ket)[0,0].real-e+E_nuc)
+
+        #create ex operator
+
+        Hmat=np.zeros((len(op),len(op)))
         V=np.zeros((len(op),len(op)))
-        W=np.zeros((len(op),len(op)))
-        Hmat=np.zeros((len(op)*2,len(op)*2))
-        S=np.zeros((len(op)*2,len(op)*2))
         for i in range(len(op)):
             for j in range(len(op)):
-                mat1=qeom.comm3(op[i],hamiltonian,op[j].transpose().conj())
-                M[i,j]=qeom.expvalue(v.transpose().conj(),mat1,v)[0,0]
-                mat2=qeom.comm3(op[i],hamiltonian,op[j])
-                Q[i,j]=-qeom.expvalue(v.transpose().conj(),mat2,v)[0,0]
-                mat3=qeom.comm2(op[i],op[j].transpose().conj())
-                V[i,j]=qeom.expvalue(v.transpose().conj(),mat3,v)[0,0]
-                mat4=qeom.comm2(op[i],op[j])
-                W[i,j]=-qeom.expvalue(v.transpose().conj(),mat4,v)[0,0]
-
-        #print('M: ', M)
-        #print('Q: ', Q)
-        #print('V: ', V)
-        #print('W: ', W)
-        Hmat=np.bmat([[M,Q],[Q.conj(),M.conj()]])
-        S=np.bmat([[V,W],[-W.conj(),-V.conj()]])
-
-        eig,aval=scipy.linalg.eig(Hmat,S)
+                #mat=op[i].transpose().conj().dot(barH.dot(op[j]))
+                mat=qeom.comm3(op[i].transpose().conj(),barH,op[j])
+                #print(mat.toarray())
+                Hmat[i,j]=qeom.expvalue(reference_ket.transpose().conj(),mat,reference_ket)[0,0].real
+                #mat3=qeom.comm2(op[i].transpose().conj(),op[j])
+                #V[i,j]=qeom.expvalue(reference_ket.transpose().conj(),mat3,reference_ket)[0,0]
+        #Diagonalize ex operator-> eigenvalues are excitation energies
+        print('M: ', Hmat)
+        eig,aval=scipy.linalg.eig(Hmat)
+        #ex_energies =  27.2114 * np.sort(eig.real)
         ex_energies =  np.sort(eig.real)
         ex_energies = np.array([i for i in ex_energies if i >0])
         print('final excitation energies (adapt in qiskit ordering) in eV: ', ex_energies)
@@ -143,20 +135,18 @@ def test(prop_list):
         print('final total energies (adapt in qiskit ordering)', final_total_energies)
 
 
+        # Response part now!
+
         omega = 0.077357
-
-        # LHS Matrix 
-
-        Hmat_res = Hmat - omega * S
-
+        identity = np.eye(len(op))
         # reading dipole integrals
         dipole_ao = mol.intor('int1e_r_sph')
-        print('dipole (ao): ', dipole_ao) 
+        #print('dipole (ao): ', dipole_ao) 
         dipole_mo = []
         # convert from AO to MO basis
         for i in range(3):
             dipole_mo.append(np.einsum("pu,uv,vq->pq", C.T, dipole_ao[i], C))
-        print('dipole (mo): ', dipole_mo) 
+        #print('dipole (mo): ', dipole_mo) 
 
         fermi_dipole_mo_op = []
         shift = 0
@@ -173,18 +163,29 @@ def test(prop_list):
                     fermi_op += openfermion.FermionOperator(((pb,1),(qb,0)), dipole_mo[i][p,q])
             fermi_dipole_mo_op.append(openfermion.transforms.get_sparse_operator(fermi_op))  
 
-        print('fermi_dipole_mo_op: ', fermi_dipole_mo_op)
+        #print('fermi_dipole_mo_op: ', fermi_dipole_mo_op)
+        bar_dipole_mo = []
+        #print('params: ', params)
+        #print('ansatz_mat: ', ansatz_mat)
+        for i in range(3):
+            is_all_zero = np.all((dipole_mo[i] == 0))
+            if is_all_zero:
+                print('Array contains only 0')
+                bar_dipole_mo.append([])
+            else:
+                bar_dipole_mo.append(qeom.barH(params, ansatz_mat, fermi_dipole_mo_op[i]))
 
+        #print('bar_dipole_mo: ', bar_dipole_mo[2].toarray())
         if 'optrot' in prop_list:
             # make angular momentum integrals!
             # reading electric dipole integrals
             angmom_ao = mol.intor('int1e_cg_irxp')
-            print('angmom (ao): ', angmom_ao)
+            #print('angmom (ao): ', angmom_ao)
             angmom_mo = []
             # convert from AO to MO basis
             for i in range(3):
                 angmom_mo.append(-0.5*np.einsum("pu,uv,vq->pq", C.T, angmom_ao[i], C))
-                print('angmom (mo): ', angmom_mo[i])
+                #print('angmom (mo): ', angmom_mo[i])
 
             fermi_angmom_mo_op = []
             shift = 0
@@ -204,159 +205,143 @@ def test(prop_list):
                     fermi_angmom_mo_op.append(openfermion.transforms.get_sparse_operator(fermi_op))
                 else:
                     fermi_angmom_mo_op.append([])
-            print('fermi_angmom_mo_op: ', fermi_angmom_mo_op)
-   
-        response_amp_dip_xyz = [] 
-        rhs_vec_dip_xyz = []
-        for x in range(3):
-            dip_up = np.zeros((len(op)))
-            dip_down = np.zeros((len(op)))
-            rhs_vec = np.zeros((2 * len(op)))
-            shape0 = fermi_dipole_mo_op[x].shape[0] 
-            is_all_zero = True
-            if shape0 > 1:
-                is_all_zero = False
-            for i in range(len(op)):
-                if not is_all_zero:
-                    mat1=qeom.comm2(fermi_dipole_mo_op[x],op[i])
-                    dip_up[i]=qeom.expvalue(v.transpose().conj(),mat1,v)[0,0]
-                    mat2=qeom.comm2(fermi_dipole_mo_op[x],op[i].transpose().conj())
-                    dip_down[i]=-1.0 * qeom.expvalue(v.transpose().conj(),mat2,v)[0,0]
-                    #dip_down[i]=qeom.expvalue(v.transpose().conj(),mat2,v)[0,0]
-            for i in range(2 * len(op)):
-                if i < len(op):
-                    rhs_vec[i] = dip_up[i]
+            #print('fermi_angmom_mo_op: ', fermi_angmom_mo_op)
+            bar_angmom_mo = []
+            for i in range(3):
+                is_all_zero = np.all((angmom_mo[i] == 0))
+                if is_all_zero:
+                    #print('Array contains only 0')
+                    bar_angmom_mo.append([])
                 else:
-                    rhs_vec[i] = dip_down[i-len(op)]
-
-            rhs_vec_dip_xyz.append(rhs_vec)
-            response_amp_dip_xyz.append(linalg.solve(Hmat_res, rhs_vec))
+                    bar_angmom_mo.append(qeom.barH(params, ansatz_mat, fermi_angmom_mo_op[i]))
 
 
-        cart = ['X', 'Y', 'Z']   
+
+        # < UCC | [Y, Qi] | UCC > --> < HF | [Ybar, Qi] | HF >
+        rhs_vec_dip_xyz = []
+        x_plus_x_dag_dip_xyz = []
+
+        # one equation rather than two
+        # (Hmat^2 - omega^2*I)(x - x^dag) = rhs
+        Hmat_sq = Hmat.dot(Hmat)
+        omega_sq = omega * omega
+        Hmat_sq -= omega_sq * identity
+        
+        for x in range(3):
+            final_rhs = np.zeros((len(op)))
+            if not isinstance(bar_dipole_mo[x], list):
+                for i in range(len(op)):
+                    mat = qeom.comm2(bar_dipole_mo[x], op[i])
+                    final_rhs[i]= qeom.expvalue(reference_ket.transpose().conj(),mat,reference_ket)[0,0].real
+            rhs_vec_dip_xyz.append(final_rhs)
+            print('final_rhs: ', final_rhs)
+            final_rhs_one = 2*omega*final_rhs
+            x_minus_x_dag = linalg.solve(Hmat_sq, final_rhs_one) 
+            # x + xdag = Hmat * (x - xdag)/omega
+            x_plus_x_dag = Hmat.dot(x_minus_x_dag)/omega
+            x_plus_x_dag_dip_xyz.append(x_plus_x_dag)
+
+
+        cart = ['X', 'Y', 'Z']
         polar = {}
         for x in range(3):
             for y in range(3):
                 key = cart[x] + cart[y]
-                polar[key] = rhs_vec_dip_xyz[x].dot(response_amp_dip_xyz[y])
+                polar[key] = rhs_vec_dip_xyz[x].dot(x_plus_x_dag_dip_xyz[y])
 
         print('polarizability: ', polar)
-        print('response_amp_dip_xyz: ', response_amp_dip_xyz)
-        print('rhs_vec_dip_xyz: ', rhs_vec_dip_xyz)
+
+        #polar = final_rhs.dot(x_plus_x_dag)
+        #print('polar: ', polar)
 
         # Oscillator strength!
-        eig_val,eig_vec=scipy.linalg.eig(Hmat,S)
+        eig_val,eig_vec=scipy.linalg.eig(Hmat)
         ex_energies =  eig_val.real
-        print('number of eigenstates: ', len(ex_energies))
         ex_data = []
         for i in range(len(ex_energies)):
-            ex_data.append((ex_energies[i], [eig_vec[:,i]]))
-            #print(ex_energies[i])
-   
+            ex_data.append([eig_vec[:,i]])
+
+
         OS = {}
         num_OS_states = len(ex_energies)
+        OS_tmp = {}
 
         for x in range(3):
-            shape0 = fermi_dipole_mo_op[x].shape[0] 
+            shape0 = fermi_dipole_mo_op[x].shape[0]
             OS[x] = []
+            OS_tmp[x] = []
             is_all_zero = True
             if shape0 > 1:
                 is_all_zero = False
             if not is_all_zero:
                 for state in range(num_OS_states):
                     term = 0
-                    for i in range(2*len(op)):
-                        coeff_i = ex_data[state][1][0][i]
-                        if i < len(op):
-                            mat1 = fermi_dipole_mo_op[x].dot(op[i])*coeff_i
-                            term += qeom.expvalue(v.transpose().conj(),mat1,v)[0,0]
-                        else:
-                            mat1 = fermi_dipole_mo_op[x].dot(op[i- len(op)].transpose().conj())*coeff_i
-                            term += qeom.expvalue(v.transpose().conj(),mat1,v)[0,0]
-                    #OS[x].append((term, np.round(ex_data[state][0], 4)))     
-                    OS[x].append(term)     
+                    for i in range(len(op)):
+                        coeff_i = ex_data[state][0][i]
+                        mat1 = fermi_dipole_mo_op[x].dot(op[i])*coeff_i
+                        term += qeom.expvalue(v.transpose().conj(),mat1,v)[0,0]
+                    OS[x].append(term)
+                    OS_tmp[x].append((term, ex_energies[state]))
             else:
                 for state in range(num_OS_states):
-                    #OS[x].append(np.zeros(num_OS_states))
                     OS[x].append(0.0)
+                    #OS[x].append(np.zeros(num_OS_states))
+
         '''
-        print('OS[0]\n')
-        for items in OS[0]:
+        print('OS[0]: \n\n')
+        for items in OS_tmp[0]:
             print(items)
-
-        print('OS[1]\n')
-        for items in OS[1]:
+        print('OS[1]: \n\n')
+        for items in OS_tmp[1]:
             print(items)
-
-        print('OS[2]\n')
-        for items in OS[2]:
+        print('OS[2]: \n\n')
+        for items in OS_tmp[2]:
             print(items)
         '''
 
-        OS_plus_minus = []
+        OS_final = []
         for state in range(num_OS_states):
             termx = OS[0][state]
             termy = OS[1][state]
             termz = OS[2][state]
-            term =  2.0/3.0 * ex_data[state][0] * (termx**2 + termy**2 + termz**2)
-            OS_plus_minus.append((term, np.round(ex_data[state][0], 4)))
+            term =  2.0/3.0 * ex_energies[state] * (termx**2 + termy**2 + termz**2)
+            OS_final.append((term, ex_energies[state]))
 
-        OS_plus_minus = sorted(OS_plus_minus, key=lambda x: x[1])
-        #print('OS_plus_minus: ', OS_plus_minus)
-
-        OS_final = []
-        for i in range(int(num_OS_states/2)):
-            OS = -1.0 * (OS_plus_minus[i][0] + OS_plus_minus[num_OS_states-i-1][0])
-            OS_final.append((OS, abs(OS_plus_minus[i][1])))
-        OS_final = sorted(OS_final, key=lambda x: x[-1])
+        OS_final = sorted(OS_final, key=lambda x: x[1])
         print('OS_final: ', OS_final)
-        
+
 
         if 'optrot' in prop_list:
-            optrot = {}
-            response_amp_angmom_xyz = [] 
             rhs_vec_angmom_xyz = []
-            for x in range(3):
-                dip_up = np.zeros((len(op)))
-                dip_down = np.zeros((len(op)))
-                rhs_vec = np.zeros((2 * len(op)))
-                if isinstance(fermi_angmom_mo_op[x], list):
-                    shape0 = 1 
-                else:
-                    shape0 = fermi_angmom_mo_op[x].shape[0]
-                is_all_zero = True
-                if shape0 > 1:
-                    is_all_zero = False
-                for i in range(len(op)):
-                    if not is_all_zero:
-                        mat1=qeom.comm2(fermi_angmom_mo_op[x],op[i])
-                        dip_up[i]=qeom.expvalue(v.transpose().conj(),mat1,v)[0,0]
-                        mat2=qeom.comm2(fermi_angmom_mo_op[x],op[i].transpose().conj())
-                        dip_down[i]=-1.0 * qeom.expvalue(v.transpose().conj(),mat2,v)[0,0]
-                        #dip_down[i]=qeom.expvalue(v.transpose().conj(),mat2,v)[0,0]
-                for i in range(2 * len(op)):
-                    if i < len(op):
-                        rhs_vec[i] = dip_up[i]
-                    else:
-                        rhs_vec[i] = dip_down[i-len(op)]
+            x_minus_x_dag_angmom_xyz = []
 
-                rhs_vec_angmom_xyz.append(rhs_vec)
-                response_amp_angmom_xyz.append(linalg.solve(Hmat_res, rhs_vec))
+            # one equation rather than two
+            # (Hmat^2 - omega^2*I)(x - x^dag) = rhs
+            
+            for x in range(3):
+                final_rhs = np.zeros((len(op)))
+                if not isinstance(bar_angmom_mo[x], list):
+                    for i in range(len(op)):
+                        mat = qeom.comm2(bar_angmom_mo[x], op[i])
+                        final_rhs[i]= qeom.expvalue(reference_ket.transpose().conj(),mat,reference_ket)[0,0].real
+                rhs_vec_angmom_xyz.append(final_rhs)
+                final_rhs_one = 2*omega*final_rhs
+                x_minus_x_dag = linalg.solve(Hmat_sq, final_rhs_one) 
+                x_minus_x_dag_angmom_xyz.append(x_minus_x_dag)
+            optrot = {}
             for x in range(3):
                 for y in range(3):
                     key = cart[x] + cart[y]
-                    optrot[key] = -1.0 * rhs_vec_dip_xyz[x].dot(response_amp_angmom_xyz[y])
-            print('optrot: ', optrot) 
+                    optrot[key] = rhs_vec_dip_xyz[x].dot(x_minus_x_dag_angmom_xyz[y])
+            print('optrot: ', optrot)
 
-            '''
-            print('rhs_vec_dip_xyz: ', rhs_vec_dip_xyz[0])
-            print('response_amp_dip_xyz: ',  response_amp_dip_xyz[0])
-            print('rhs_vec_angmom_xyz: ', rhs_vec_angmom_xyz[0])
-            print('response_amp_angmom_xyz: ',  response_amp_angmom_xyz[0])
-            '''
-   
+            #print('rhs_vec_dip_xyz :', rhs_vec_dip_xyz[0])
+            #print('x_plus_x_dag_dip_xyz :', x_plus_x_dag_dip_xyz[0])
+            #print('rhs_vec_angmom_xyz :', rhs_vec_angmom_xyz[0])
+            #print('x_minus_x_dag_angmom_xyz :', x_minus_x_dag_angmom_xyz[0])
+
             RS = {}
-            num_RS_states = len(ex_energies)
+            num_RS_states =  len(ex_energies)
 
             for x in range(3):
                 shape0_mu = fermi_dipole_mo_op[x].shape[0]
@@ -371,32 +356,37 @@ def test(prop_list):
                     for state in range(num_RS_states):
                         term_mu = 0
                         term_L = 0
-                        for i in range(2*len(op)):
-                            coeff_i = ex_data[state][1][0][i]
-                            if i < len(op):
-                                mat1 = fermi_dipole_mo_op[x].dot(op[i])*coeff_i
-                                term_mu -= qeom.expvalue(v.transpose().conj(),mat1,v)[0,0]
-                                mat1 = fermi_angmom_mo_op[x].dot(op[i])*coeff_i
-                                term_L -= qeom.expvalue(v.transpose().conj(),mat1,v)[0,0]
-                            else:
-                                mat1 = fermi_dipole_mo_op[x].dot(op[i-len(op)].transpose().conj())*coeff_i
-                                term_mu -= qeom.expvalue(v.transpose().conj(),mat1,v)[0,0]
-                                mat1 = fermi_angmom_mo_op[x].dot(op[i-len(op)].transpose().conj())*coeff_i
-                                term_L -= qeom.expvalue(v.transpose().conj(),mat1,v)[0,0]
-                        RS[x].append((term_mu, term_L, ex_data[state][0]))
+                        for i in range(len(op)):
+                            coeff_i = ex_data[state][0][i]
+                            mat1 = fermi_dipole_mo_op[x].dot(op[i])*coeff_i
+                            term_mu += qeom.expvalue(v.transpose().conj(),mat1,v)[0,0]
+                            mat1 = fermi_angmom_mo_op[x].dot(op[i])*coeff_i
+                            term_L += qeom.expvalue(v.transpose().conj(),mat1,v)[0,0]
+                        RS[x].append((term_mu, term_L, ex_energies[state]))
                 else:
                     for state in range(num_RS_states):
-                        RS[x].append((0,0,ex_data[state][0]))
+                        RS[x].append((0,0,ex_energies[state]))
 
+            
             for x in range(3):
-                RS[x] = sorted(RS[x], key=lambda x: x[2])
+                RS[x] = sorted(RS[x], key=lambda x: x[2]) 
+           
+            '''
+            print('RS[0]\n')
+            for items in RS[0]:
+                print(items)
 
+            print('RS[1]\n')
+            for items in RS[1]:
+                print(items)
 
-            RS_plus_minus = []
+            print('RS[1]\n')
+            for items in RS[2]:
+                print(items)
+            '''
+
+            RS_final = []
             for state in range(num_RS_states):
-
-                ex_energy = np.round(RS[0][state][2], 4)
-                #print('ex_energy: ', ex_energy)
                 term_mux = RS[0][state][0]
                 term_Lx = RS[0][state][1]
 
@@ -406,23 +396,10 @@ def test(prop_list):
                 term_muz = RS[2][state][0]
                 term_Lz = RS[2][state][1]
 
-                #print('term_mux: ', term_mux)
-                #print('term_muy: ', term_muy)
-                #print('term_muz: ', term_muz)
-                #print('term_Lx: ', term_Lx)
-                #print('term_Ly: ', term_Ly)
-                #print('term_Lz: ', term_Lz)
-
                 term =  -1.0*(term_mux*term_Lx + term_muy*term_Ly + term_muz*term_Lz)
-                RS_plus_minus.append((term, np.round(RS[0][state][2], 4)))
+                RS_final.append((term, ex_energies[state]))
 
-            RS_plus_minus = sorted(RS_plus_minus, key=lambda x: x[1])
-
-            RS_final = []
-            for i in range(int(num_RS_states/2)):
-                RS = RS_plus_minus[i][0] - RS_plus_minus[num_OS_states-i-1][0]
-                RS_final.append((RS, abs(RS_plus_minus[i][1])))
-            RS_final = sorted(RS_final, key=lambda x: x[-1])
+            RS_final = sorted(RS_final, key=lambda x: x[1])
             print('RS_final: ', RS_final)
         temp = {}
         temp['polarizability'] = polar
@@ -431,19 +408,23 @@ def test(prop_list):
         if 'optrot' in prop_list:
             temp['rotation(589nm)'] = optrot
             temp['trace_rotation(589nm)'] = optrot['XX'] + optrot['YY'] + optrot['ZZ']
-            temp['RS'] = RS
+            temp['RS'] = RS_final
         else:
             temp['rotation(589nm)'] = 0
             temp['trace_rotation(589nm)'] = 0 
             temp['RS'] = 0
+        #temp['rotation(589nm)'] = optrot
+        #temp['trace_rotation(589nm)'] = optrot['XX'] + optrot['YY'] + optrot['ZZ']
+        #temp['RS'] = RS_final
         results.append(temp)
     return results
 
 if __name__== "__main__":
+    #results = test(['polar', 'optrot'])
     results = test(['polar'])
     print('results: ', results)
-    #output = open('lih_qeom_2.dat', 'wb')
-    #pickle.dump(results, output) # converts array to binary and writes to output
-    #input_ = open('lih_qeom_2.dat', 'rb')
-    #results = pickle.load(input_) # Reads 
-    #print('results after reading: ', results)
+    output = open('lih_scqeom_2.dat', 'wb')
+    pickle.dump(results, output) # converts array to binary and writes to output
+    input_ = open('lih_scqeom_2.dat', 'rb')
+    results = pickle.load(input_) # Reads 
+    print('results after reading: ', results)
