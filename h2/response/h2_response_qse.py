@@ -184,19 +184,19 @@ def test(prop_list):
             fermi_dipole_mo_op.append(openfermion.transforms.get_sparse_operator(fermi_op))  
 
         #print('fermi_dipole_mo_op: ', fermi_dipole_mo_op)
-        bar_dipole_mo = []
+        final_dipole_op = []
         #print('params: ', params)
         #print('ansatz_mat: ', ansatz_mat)
         for i in range(3):
             is_all_zero = np.all((dipole_mo[i] == 0))
             if is_all_zero:
                 print('Array contains only 0')
-                bar_dipole_mo.append([])
+                final_dipole_op.append([])
             else:
-                #bar_dipole_mo.append(qeom.barH(params, ansatz_mat, fermi_dipole_mo_op[i]))
-                bar_dipole_mo.append(fermi_dipole_mo_op[i])
+                #final_dipole_op.append(qeom.barH(params, ansatz_mat, fermi_dipole_mo_op[i]))
+                final_dipole_op.append(fermi_dipole_mo_op[i])
 
-        #print('bar_dipole_mo: ', bar_dipole_mo[2].toarray())
+        #print('final_dipole_op: ', final_dipole_op[2].toarray())
         if 'optrot' in prop_list:
             # make angular momentum integrals!
             # reading electric dipole integrals
@@ -227,14 +227,15 @@ def test(prop_list):
                 else:
                     fermi_angmom_mo_op.append([])
             #print('fermi_angmom_mo_op: ', fermi_angmom_mo_op)
-            bar_angmom_mo = []
+            final_angmom_op = []
             for i in range(3):
                 is_all_zero = np.all((angmom_mo[i] == 0))
                 if is_all_zero:
                     #print('Array contains only 0')
-                    bar_angmom_mo.append([])
+                    final_angmom_op.append([])
                 else:
-                    bar_angmom_mo.append(qeom.barH(params, ansatz_mat, fermi_angmom_mo_op[i]))
+                    #final_angmom_op.append(qeom.barH(params, ansatz_mat, fermi_angmom_mo_op[i]))
+                    final_angmom_op.append(fermi_angmom_mo_op[i])
 
 
 
@@ -253,10 +254,10 @@ def test(prop_list):
         
         for x in range(3):
             final_rhs = np.zeros((len(op)))
-            if not isinstance(bar_dipole_mo[x], list):
+            if not isinstance(final_dipole_op[x], list):
                 for i in range(len(op)):
-                    #mat = qeom.comm2(bar_dipole_mo[x], op[i])
-                    mat = bar_dipole_mo[x].dot(op[i])
+                    #mat = qeom.comm2(final_dipole_op[x], op[i])
+                    mat = final_dipole_op[x].dot(op[i])
                     #final_rhs[i]= qeom.expvalue(reference_ket.transpose().conj(),mat,reference_ket)[0,0].real
                     final_rhs[i]= qeom.expvalue(v.transpose().conj(),mat,v)[0,0].real
             rhs_vec_dip_xyz.append(final_rhs)
@@ -271,10 +272,10 @@ def test(prop_list):
         Hmat = M - omega * V
         for x in range(3):
             final_rhs = np.zeros((len(op)))
-            if not isinstance(bar_dipole_mo[x], list):
+            if not isinstance(final_dipole_op[x], list):
                 for i in range(len(op)):
-                    #mat = qeom.comm2(bar_dipole_mo[x], op[i])
-                    mat = bar_dipole_mo[x].dot(op[i])
+                    #mat = qeom.comm2(final_dipole_op[x], op[i])
+                    mat = final_dipole_op[x].dot(op[i])
                     #final_rhs[i]= qeom.expvalue(reference_ket.transpose().conj(),mat,reference_ket)[0,0].real
                     final_rhs[i]= qeom.expvalue(v.transpose().conj(),mat,v)[0,0].real
             print('final_rhs: ', final_rhs)
@@ -299,10 +300,10 @@ def test(prop_list):
         Hmat = M + omega * V
         for x in range(3):
             final_rhs = np.zeros((len(op)))
-            if not isinstance(bar_dipole_mo[x], list):
+            if not isinstance(final_dipole_op[x], list):
                 for i in range(len(op)):
-                    #mat = qeom.comm2(bar_dipole_mo[x], op[i])
-                    mat = bar_dipole_mo[x].dot(op[i])
+                    #mat = qeom.comm2(final_dipole_op[x], op[i])
+                    mat = final_dipole_op[x].dot(op[i])
                     #final_rhs[i]= qeom.expvalue(reference_ket.transpose().conj(),mat,reference_ket)[0,0].real
                     final_rhs[i]= qeom.expvalue(v.transpose().conj(),mat,v)[0,0].real
             print('final_rhs: ', final_rhs)
@@ -405,6 +406,10 @@ def test(prop_list):
 
 
         if 'optrot' in prop_list:
+            Hmat = M.dot(M)
+            omega_sq = omega * omega
+            ##Hmat_sq -= omega_sq * identity
+            Hmat -= omega_sq * V 
             rhs_vec_angmom_xyz = []
             x_minus_x_dag_angmom_xyz = []
 
@@ -413,10 +418,12 @@ def test(prop_list):
             
             for x in range(3):
                 final_rhs = np.zeros((len(op)))
-                if not isinstance(bar_angmom_mo[x], list):
+                if not isinstance(final_angmom_op[x], list):
                     for i in range(len(op)):
-                        mat = qeom.comm2(bar_angmom_mo[x], op[i])
-                        final_rhs[i]= qeom.expvalue(reference_ket.transpose().conj(),mat,reference_ket)[0,0].real
+                        #mat = qeom.comm2(final_angmom_op[x], op[i])
+                        mat = final_angmom_op[x].dot(op[i])
+                        #final_rhs[i]= qeom.expvalue(reference_ket.transpose().conj(),mat,reference_ket)[0,0].real
+                        final_rhs[i]= qeom.expvalue(v.transpose().conj(),mat,v)[0,0].real
                 rhs_vec_angmom_xyz.append(final_rhs)
                 final_rhs_one = 2*omega*final_rhs
                 x_minus_x_dag = linalg.solve(Hmat, final_rhs_one) 
@@ -510,8 +517,8 @@ def test(prop_list):
     return results
 
 if __name__== "__main__":
-    #results = test(['polar', 'optrot'])
-    results = test(['polar'])
+    results = test(['polar', 'optrot'])
+    #results = test(['polar'])
     print('results: ', results)
     #output = open('h2_qse.dat', 'wb')
     #pickle.dump(results, output) # converts array to binary and writes to output
