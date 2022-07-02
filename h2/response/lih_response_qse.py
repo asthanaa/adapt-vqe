@@ -22,6 +22,7 @@ def test(prop_list):
     dist = np.arange(0.2,2.70,0.1)
     dist = np.arange(2.2,2.651,0.025)
     dist = np.arange(2.700,3.399,0.025)
+    dist = np.arange(3.425,4.19,0.025)
     #dist = [0.7]
     results = []
     for r in dist:
@@ -503,8 +504,8 @@ def test(prop_list):
 if __name__== "__main__":
     results = test(['polar'])
     print('results: ', results)
-    output = open('lih_qse_2.dat', 'wb')
+    output = open('lih_qse_3.dat', 'wb')
     pickle.dump(results, output) # converts array to binary and writes to output
-    input_ = open('lih_qse_2.dat', 'rb')
+    input_ = open('lih_qse_3.dat', 'rb')
     results = pickle.load(input_) # Reads 
     print('results after reading: ', results)

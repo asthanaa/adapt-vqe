@@ -21,6 +21,7 @@ import pickle
 def test(prop_list):
     dist = np.arange(1.5,3.70,0.1)
     dist = np.arange(2.2,4.2,0.025)
+    dist = np.arange(3.425,4.19,0.025)
     #dist = [0.7]
     #dist_1 = np.arange(2.2,2.651,0.025)
     #dist_1 = np.append(dist_1,np.arange(2.652, 2.677, 0.008))
@@ -431,7 +432,7 @@ def test(prop_list):
         if 'optrot' in prop_list:
             temp['rotation(589nm)'] = optrot
             temp['trace_rotation(589nm)'] = optrot['XX'] + optrot['YY'] + optrot['ZZ']
-            temp['RS'] = RS
+            temp['RS'] = RS_final
         else:
             temp['rotation(589nm)'] = 0
             temp['trace_rotation(589nm)'] = 0 
@@ -442,8 +443,8 @@ def test(prop_list):
 if __name__== "__main__":
     results = test(['polar'])
     print('results: ', results)
-    #output = open('lih_qeom_2.dat', 'wb')
-    #pickle.dump(results, output) # converts array to binary and writes to output
-    #input_ = open('lih_qeom_2.dat', 'rb')
-    #results = pickle.load(input_) # Reads 
-    #print('results after reading: ', results)
+    output = open('lih_qeom_3.dat', 'wb')
+    pickle.dump(results, output) # converts array to binary and writes to output
+    input_ = open('lih_qeom_3.dat', 'rb')
+    results = pickle.load(input_) # Reads 
+    print('results after reading: ', results)

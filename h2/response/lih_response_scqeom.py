@@ -24,6 +24,8 @@ def test(prop_list):
     dist = [2.67695]
     dist = np.arange(2.2,2.651,0.025)
     dist = np.arange(2.700,3.399,0.025)
+    dist = np.arange(3.425,4.19,0.025)
+    dist = [2.2]
     results = []
     for r in dist:
         geometry = [('Li', (0,0,0)), ('H', (0,0,1*r))]
@@ -278,8 +280,10 @@ def test(prop_list):
                     term = 0
                     for i in range(len(op)):
                         coeff_i = ex_data[state][0][i]
-                        mat1 = fermi_dipole_mo_op[x].dot(op[i])*coeff_i
-                        term += qeom.expvalue(v.transpose().conj(),mat1,v)[0,0]
+                        #mat1 = fermi_dipole_mo_op[x].dot(op[i])*coeff_i
+                        #term += qeom.expvalue(v.transpose().conj(),mat1,v)[0,0]
+                        mat1 = bar_dipole_mo[x].dot(op[i])*coeff_i
+                        term += qeom.expvalue(reference_ket.transpose().conj(),mat1,reference_ket)[0,0]
                     OS[x].append(term)
                     OS_tmp[x].append((term, ex_energies[state]))
             else:
@@ -423,8 +427,8 @@ if __name__== "__main__":
     #results = test(['polar', 'optrot'])
     results = test(['polar'])
     print('results: ', results)
-    output = open('lih_scqeom_2.dat', 'wb')
-    pickle.dump(results, output) # converts array to binary and writes to output
-    input_ = open('lih_scqeom_2.dat', 'rb')
-    results = pickle.load(input_) # Reads 
-    print('results after reading: ', results)
+    #output = open('lih_scqeom_3.dat', 'wb')
+    #pickle.dump(results, output) # converts array to binary and writes to output
+    #input_ = open('lih_scqeom_3.dat', 'rb')
+    #results = pickle.load(input_) # Reads 
+    #print('results after reading: ', results)

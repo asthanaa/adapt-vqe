@@ -102,8 +102,10 @@ dist_3 = np.append(dist_3, np.arange(3.409,3.424,0.002))
 for i in range(len(dist_3)-2):
     fci_3.append(results_fci_3[i]['isotropic_polarizability'])
 
-temp = len(np.arange(3.425,4.19,0.025))
-dist_3 = np.append(dist_3, np.arange(3.425,4.19,0.025))
+#temp = len(np.arange(3.425,4.19,0.025))
+temp = len(np.arange(3.425,4.01,0.025))
+#dist_3 = np.append(dist_3, np.arange(3.425,4.19,0.025))
+dist_3 = np.append(dist_3, np.arange(3.425,4.01,0.025))
 #size_3 = len(dist_3) - 1
 #print(size_1)
 #print(size_2)
@@ -170,29 +172,56 @@ scqeom_results_2 = pickle.load(input_)
 for i in range(len(dist_2_qeom)):
     scqeom_2.append(scqeom_results_2[i]['isotropic_polarizability'])
 
+qse_2 = []
+input_ = open(mol_name + '_qse_2.dat', 'rb')
+qse_results_2 = pickle.load(input_) 
+for i in range(len(dist_2_qeom)):
+    qse_2.append(qse_results_2[i]['isotropic_polarizability'])
+
+#dist_3_qeom  = np.arange(3.425,4.19,0.025)
+dist_3_qeom  = np.arange(3.425,4.01,0.025)
+qeom_3 = []
+input_ = open(mol_name + '_qeom_3.dat', 'rb')
+qeom_results_3 = pickle.load(input_) 
+for i in range(len(dist_3_qeom)):
+    qeom_3.append(qeom_results_3[i]['isotropic_polarizability'])
+
+scqeom_3 = []
+input_ = open(mol_name + '_scqeom_3.dat', 'rb')
+scqeom_results_3 = pickle.load(input_) 
+for i in range(len(dist_3_qeom)):
+    scqeom_3.append(scqeom_results_3[i]['isotropic_polarizability'])
+
+qse_3 = []
+input_ = open(mol_name + '_qse_3.dat', 'rb')
+qse_results_3 = pickle.load(input_) 
+for i in range(len(dist_3_qeom)):
+    qse_3.append(qse_results_3[i]['isotropic_polarizability'])
+
 
 fig, ax = plt.subplots()
 plt.ticklabel_format(style='sci', axis='y', scilimits=(0,0))
 #color='green', marker='o', linestyle='dashed', linewidth=2, markersize=12
-ax.plot(dist_1, fci_1, label="FCI", color='grey', linestyle='solid', linewidth=1.5)#, marker = 'o', markersize=3)
-ax.plot(dist_2, fci_2, color='grey', linestyle='solid', linewidth=1.5)#, marker = 'o', markersize=3)
-ax.plot(dist_3, fci_3, color='grey', linestyle='solid', linewidth=1.5)#, marker = 'o', markersize=3)
-#ax.plot(dist, iso_polar_fci, label="FCI", color='grey', linestyle='solid', linewidth=1.5)
-#ax.plot(dist, iso_polar_fci, label="FCI", color='grey', marker = 'o', markersize = 0.5, linestyle='None')
-ax.plot(dist_1_qeom, qeom_1, label="qEOM", marker = 'x', color = 'red',  linestyle='None', markersize=2)
-ax.plot(dist_2_qeom, qeom_2, marker = 'x', color = 'red',  linestyle='None', markersize=2)
-ax.plot(dist_1_qeom, scqeom_1, label="EOM-VQE", marker = 'x', color = 'blue',  linestyle='None', markersize=2)
-ax.plot(dist_2_qeom, scqeom_2, marker = 'x', color = 'blue',  linestyle='None', markersize=2)
-ax.plot(dist_1_qeom, qse_1, label="QSE", marker = 'x', color = 'orange',  linestyle='None', markersize=2)
-#ax.plot(dist, iso_polar_scqeom, label="VQE-EOM", marker = '.', color = 'blue',  linestyle='None')
-#ax.plot(dist, iso_polar_qse, label="QSE", marker = '.', color = 'orange',  linestyle='None')
+ax.plot(dist_1, fci_1, label="FCI", color='grey', linestyle='solid', linewidth=2)#, marker = 'o', markersize=3)
+ax.plot(dist_2, fci_2, color='grey', linestyle='solid', linewidth=2)#, marker = 'o', markersize=3)
+ax.plot(dist_3, fci_3, color='grey', linestyle='solid', linewidth=2)#, marker = 'o', markersize=3)
+ax.plot(dist_1_qeom, qeom_1, label="qEOM", marker = 'x', color = 'red',  linestyle='None', markersize=2.5)
+ax.plot(dist_2_qeom, qeom_2, marker = 'x', color = 'red',  linestyle='None', markersize=2.5)
+ax.plot(dist_3_qeom, qeom_3, marker = 'x', color = 'red',  linestyle='None', markersize=2.5)
+ax.plot(dist_1_qeom, scqeom_1, label="EOM-VQE", marker = 'x', color = 'blue',  linestyle='None', markersize=2.5)
+ax.plot(dist_2_qeom, scqeom_2, marker = 'x', color = 'blue',  linestyle='None', markersize=2.5)
+ax.plot(dist_3_qeom, scqeom_3, marker = 'x', color = 'blue',  linestyle='None', markersize=2.5)
+ax.plot(dist_1_qeom, qse_1, label="QSE", marker = 'x', color = 'orange',  linestyle='None', markersize=2.5)
+ax.plot(dist_2_qeom, qse_2, marker = 'x', color = 'orange',  linestyle='None', markersize=2.5)
+ax.plot(dist_3_qeom, qse_3, marker = 'x', color = 'orange',  linestyle='None', markersize=2.5)
 plt.xlabel('Li-H bond length ($\mathbf{\AA}$)', fontsize=17, fontweight='bold')
 plt.ylabel("Isotropic polarizability (au)", fontsize=15, fontweight='bold')
 ax.set_ylim([-200000, 200000])
 ax.tick_params(axis='y', which='major', labelsize=16)
 ax.tick_params(axis='x', which='major', labelsize=15)
 ax.tick_params(axis='both', which='minor', labelsize=15)
-ax.legend(loc='upper left', fontsize=9)
+#ax.legend(loc='upper left', fontsize=9)
+ax.legend(loc='upper center', fontsize=11, frameon=False)
 name_fig = mol_name + 'part1_markers.pdf'
 #fig.savefig('h2_polarizability_sto_3g.pdf', dpi=600, bbox_inches="tight")
 fig.savefig(name_fig, dpi=600, bbox_inches="tight")

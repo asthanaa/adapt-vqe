@@ -19,8 +19,8 @@ from scipy import linalg
 import pickle
 
 def test(prop_list):
-    dist = np.arange(0.2,2.70,0.1)
-    #dist = [0.7]
+    #dist = np.arange(0.2,2.70,0.1)
+    dist = [0.7]
     results = []
     for r in dist:
 
@@ -33,12 +33,12 @@ def test(prop_list):
         #           H 3 {0} 1 {2} 2 {3}
         #           '''.format(0.75, 1.5, 90.0, 60.0)
 
-        #geometry = '''
-        #           H            0.000000000000    -0.750000000000    -0.324759526419
-        #           H           -0.375000000000    -0.750000000000     0.324759526419
-        #           H            0.000000000000     0.750000000000    -0.324759526419
-        #           H            0.375000000000     0.750000000000     0.324759526419
-        #           '''
+        geometry = '''
+                   H            0.000000000000    -0.750000000000    -0.324759526419
+                   H           -0.375000000000    -0.750000000000     0.324759526419
+                   H            0.000000000000     0.750000000000    -0.324759526419
+                   H            0.375000000000     0.750000000000     0.324759526419
+                   '''
 
 
         charge = 0
@@ -239,14 +239,38 @@ def test(prop_list):
         # Oscillator strength!
         eig_val,eig_vec=scipy.linalg.eig(Hmat,S)
         ex_energies =  eig_val.real
+        print('ex_energies: ', ex_energies)
+        old_order = np.argsort(ex_energies)
+        ex_energies = sorted(ex_energies)#, key=lambda x: x[-1])
+        new_eig_vec = np.zeros((2*len(op), 2*len(op)))
+        for i in range(2*len(op)):
+            new_eig_vec[i] = eig_vec[:,old_order[i]]
+        
+         
+
         print('number of eigenstates: ', len(ex_energies))
+        #print('eig_val: ', eig_val)
+        #print('eig_vec: ', eig_vec[0])
+        #print('new_eig_vec: ', new_eig_vec)
+        #print('ex_energies: ', ex_energies)
         ex_data = []
-        for i in range(len(ex_energies)):
-            ex_data.append((ex_energies[i], [eig_vec[:,i]]))
+        ex_data_neg = []
+        size_ex_energies = len(ex_energies)
+        for i in range(int(size_ex_energies/2)):
+            if ex_energies[i] < 0:
+                ex_data_neg.append((ex_energies[i], [new_eig_vec[i]]))
+                ex_data.append((ex_energies[size_ex_energies-i-1], [new_eig_vec[size_ex_energies-i-1]]))
             #print(ex_energies[i])
-   
+
+        #print('ex_data_neg: ', ex_data_neg)
+        #print('ex_data: ', ex_data)
+        num_OS_states = len(ex_data)
+
+        print('plus minus') 
+        for state in range(num_OS_states):
+            print(ex_data[state][0], ex_data_neg[state][0])
+
         OS = {}
-        num_OS_states = len(ex_energies)
 
         for x in range(3):
             shape0 = fermi_dipole_mo_op[x].shape[0] 
@@ -255,54 +279,147 @@ def test(prop_list):
             if shape0 > 1:
                 is_all_zero = False
             if not is_all_zero:
+                print('x:: ', x)
                 for state in range(num_OS_states):
+                    ex_energy = ex_data[state][0]
+                    #if ex_energy > 0:
+                    print('ex_energy: ', ex_energy)
                     term = 0
                     for i in range(2*len(op)):
                         coeff_i = ex_data[state][1][0][i]
                         if i < len(op):
-                            mat1 = fermi_dipole_mo_op[x].dot(op[i])*coeff_i
-                            term += qeom.expvalue(v.transpose().conj(),mat1,v)[0,0]
+                            #mat1 = fermi_dipole_mo_op[x].dot(op[i])*coeff_i
+                            #mat1 = fermi_dipole_mo_op[x].dot(op[i].transpose().conj())*coeff_i
+                            mat1 = op[i].dot(fermi_dipole_mo_op[x])*coeff_i
+                            temp = qeom.expvalue(v.transpose().conj(),mat1,v)[0,0]
+                            term += temp	
+                            #print(' smaller state op term: ', state, i, temp)
+                            #print('coeff_i: ', coeff_i)
                         else:
-                            mat1 = fermi_dipole_mo_op[x].dot(op[i- len(op)].transpose().conj())*coeff_i
-                            term += qeom.expvalue(v.transpose().conj(),mat1,v)[0,0]
+                            #mat1 = fermi_dipole_mo_op[x].dot(op[i- len(op)].transpose().conj())*coeff_i
+                            #mat2 = fermi_dipole_mo_op[x].dot(op[i- len(op)])*coeff_i
+                            #mat1 = op[i-len(op)].dot(fermi_dipole_mo_op[x])*coeff_i
+                            mat1 = op[i-len(op)].transpose().conj().dot(fermi_dipole_mo_op[x])*coeff_i
+                            temp = qeom.expvalue(v.transpose().conj(),mat1,v)[0,0]
+                            #temp = qeom.expvalue(v.transpose().conj(),mat2,v)[0,0]
+                            #term += qeom.expvalue(v.transpose().conj(),mat1,v)[0,0]
+                            #mat1 = fermi_dipole_mo_op[x].dot(op[i- len(op)])*coeff_i
+                            #temp = qeom.expvalue(v.transpose().conj(),mat1,v)[0,0]
+                            term += temp	
+                            #print('greater state op term: ', state, i, temp)
+                            #print('coeff_i: ', coeff_i)
+                            #print('term_expt: ', temp)
                     #OS[x].append((term, np.round(ex_data[state][0], 4)))     
                     OS[x].append(term)     
             else:
                 for state in range(num_OS_states):
-                    #OS[x].append(np.zeros(num_OS_states))
+                    #ex_energy = ex_data[state][0]
+                    #print('ex_energy: ', ex_energy)
+                    #if ex_energy > 0:
                     OS[x].append(0.0)
+
+        ############################################################################################
+        OS_neg = {}
+        print('OS_neg: ')
+        for x in range(3):
+            shape0 = fermi_dipole_mo_op[x].shape[0] 
+            OS_neg[x] = []
+            is_all_zero = True
+            if shape0 > 1:
+                is_all_zero = False
+            if not is_all_zero:
+                for state in range(num_OS_states):
+                    ex_energy = ex_data_neg[state][0]
+                    print('ex_energy: ', ex_energy)
+                    term = 0
+                    for i in range(2*len(op)):
+                        coeff_i = ex_data_neg[state][1][0][i]
+                        if i < len(op):
+                            mat1 = fermi_dipole_mo_op[x].dot(op[i])*coeff_i
+                            temp = qeom.expvalue(v.transpose().conj(),mat1,v)[0,0]
+                            term += temp	
+                            #print(' smaller state op term: ', state, i, temp)
+                            #print('coeff_i: ', coeff_i)
+                        else:
+                            mat1 = fermi_dipole_mo_op[x].dot(op[i- len(op)].transpose().conj())*coeff_i
+                            temp = qeom.expvalue(v.transpose().conj(),mat1,v)[0,0]
+                            term += temp	
+                            #print('greater state op term: ', state, i, temp)
+                            #print('coeff_i: ', coeff_i)
+                    OS_neg[x].append(term)     
+            else:
+                for state in range(num_OS_states):
+                    #ex_energy = ex_data[state][0]
+                    #print('ex_energy: ', ex_energy)
+                    #if ex_energy > 0:
+                    OS_neg[x].append(0.0)
+
+        #OS_final = OS
+        #OS_final = OS
+        #for i in range(len(op)):
+        # mu_z
+        # fix state and mu_z 
         '''
-        print('OS[0]\n')
-        for items in OS[0]:
-            print(items)
+        op_exc = []
+        op_de_exc = []
+        state = 2
+        print(2/3 * ex_data[state][0])
+        for i in range(len(op)):
+            op_exc.append(op[i])
+        for i in range(len(op)):
+            op_exc.append(op[i].transpose().conj())
+        #for state in range(num_OS_states):
+        #    print('ex_energy: ', ex_data[state][0]) 
+        #    coeff_i = ex_data[state][1][0][i]
+        A = 0
+        B = 0
+        C = 0
+        D = 0
+        for i in range(6):
+            #mat1 = fermi_dipole_mo_op[2].dot(op_exc[i])*ex_data[state][1][0][i]
+            #print(qeom.expvalue(v.transpose().conj(),mat1,v)[0,0])
+            mat1 = op_exc[i].dot(fermi_dipole_mo_op[2])*ex_data[state][1][0][i]
+            print(qeom.expvalue(v.transpose().conj(),mat1,v)[0,0])
+            #mat1 = fermi_dipole_mo_op[2].dot(op_de_exc[i])*ex_data[state][1][0][3+i]
+            #A += qeom.expvalue(v.transpose().conj(),mat1,v)[0,0]
+            #B += qeom.expvalue(v.transpose().conj(),mat1,v)[0,0]
+            #mat1 = op_de_exc[i].dot(fermi_dipole_mo_op[2])*ex_data[state][1][0][i]
+            #C += qeom.expvalue(v.transpose().conj(),mat1,v)[0,0]
+            #mat1 = op_exc[i].dot(fermi_dipole_mo_op[2])*ex_data[state][1][0][3+i]
+            #D += qeom.expvalue(v.transpose().conj(),mat1,v)[0,0]
 
-        print('OS[1]\n')
-        for items in OS[1]:
-            print(items)
-
-        print('OS[2]\n')
-        for items in OS[2]:
-            print(items)
+        #print('A: ', A)
+        #print('B: ', B)
+        #print('C: ', C)
+        #print('D: ', D)
+        print('\n')
+        print(ex_data[state][1][0][0])
+        print(ex_data[state][1][0][1])
+        print(ex_data[state][1][0][2])
+        print(ex_data[state][1][0][3])
+        print(ex_data[state][1][0][4])
+        print(ex_data[state][1][0][5])
         '''
 
-        OS_plus_minus = []
+
+        OS_plus = []
         for state in range(num_OS_states):
-            termx = OS[0][state]
-            termy = OS[1][state]
-            termz = OS[2][state]
+            termx_plus = OS[0][state]
+            termy_plus = OS[1][state]
+            termz_plus = OS[2][state]
+            termx_minus = OS_neg[0][state]
+            termy_minus = OS_neg[1][state]
+            termz_minus = OS_neg[2][state]
+            termx = 0.5 * (termx_plus + termx_minus)
+            termy = 0.5 * (termy_plus + termy_minus)
+            termz = 0.5 * (termz_plus + termz_minus)
+            print(' + termx, termy, termz: ', termx, termy, termz)
             term =  2.0/3.0 * ex_data[state][0] * (termx**2 + termy**2 + termz**2)
-            OS_plus_minus.append((term, np.round(ex_data[state][0], 4)))
+            OS_plus.append((term, np.round(ex_data[state][0], 4)))
 
-        OS_plus_minus = sorted(OS_plus_minus, key=lambda x: x[1])
-        #print('OS_plus_minus: ', OS_plus_minus)
+        OS_final = sorted(OS_plus, key=lambda x: x[1])
 
-        OS_final = []
-        for i in range(int(num_OS_states/2)):
-            OS = -1.0 * (OS_plus_minus[i][0] + OS_plus_minus[num_OS_states-i-1][0])
-            OS_final.append((OS, abs(OS_plus_minus[i][1])))
-        OS_final = sorted(OS_final, key=lambda x: x[-1])
         print('OS_final: ', OS_final)
-        
 
         if 'optrot' in prop_list:
             optrot = {}
@@ -419,18 +536,24 @@ def test(prop_list):
         temp = {}
         temp['polarizability'] = polar
         temp['isotropic_polarizability'] = 1/3.0 * (polar['XX'] + polar['YY'] + polar['ZZ'])
-        temp['rotation(589nm)'] = optrot
-        temp['trace_rotation(589nm)'] = optrot['XX'] + optrot['YY'] + optrot['ZZ']
         temp['OS'] = OS_final
-        temp['RS'] = RS_final
+        if 'optrot' in prop_list:
+            temp['rotation(589nm)'] = optrot
+            temp['trace_rotation(589nm)'] = optrot['XX'] + optrot['YY'] + optrot['ZZ']
+            temp['RS'] = RS_final
+        else:
+            temp['rotation(589nm)'] = 0
+            temp['trace_rotation(589nm)'] = 0
+            temp['RS'] = 0
         results.append(temp)
     return results
 
 if __name__== "__main__":
-    results = test(['polar', 'optrot'])
+    #results = test(['polar', 'optrot'])
+    results = test(['polar'])
     print('results: ', results)
-    output = open('h2_qeom.dat', 'wb')
-    pickle.dump(results, output) # converts array to binary and writes to output
-    input_ = open('h2_qeom.dat', 'rb')
-    results = pickle.load(input_) # Reads 
-    print('results after reading: ', results)
+    #output = open('h2_qeom.dat', 'wb')
+    #pickle.dump(results, output) # converts array to binary and writes to output
+    #input_ = open('h2_qeom.dat', 'rb')
+    #results = pickle.load(input_) # Reads 
+    #print('results after reading: ', results)

@@ -20,7 +20,7 @@ import pickle
 def test(prop_list):
     dist_h2 = np.arange(0.2,2.70,0.1)
     #dist_h2 = np.arange(1.75,3.00,0.1)
-    #dist_h2 = [0.7]
+    dist_h2 = [0.7]
     results = []
     for r in dist_h2:
         geometry = [('H', (0,0,0)), ('H', (0,0,1*r))]
@@ -126,7 +126,9 @@ def test(prop_list):
             #if np.round(number.real, 3) == n_a + n_b and ei !=0 and np.round(S2.real, 3) == 0:
             if np.round(number.real, 3) == n_a + n_b and ei !=0 :
                 index_states.append(ei) 
-            print(" State %4i: %12.8f au  <S2>: %12.8f" %(ei,e[ei]+E_nuc,S2))
+                print(e[ei]-e[0]) 
+                print(v[:,ei]) 
+            #print(" State %4i: %12.8f au  <S2>: %12.8f" %(ei,e[ei]+E_nuc,S2))
 
         print('index_states: ', index_states)
         ex_states = np.zeros((num_states))
@@ -241,7 +243,15 @@ def test(prop_list):
             #OS.append((term, np.abs(np.round(S2_states[state],3)), ex_states[state]))
             OS.append((term, ex_states[state]))
                 
-                 
+        
+        print('experimentation!\n')
+        state = index_states[0]
+        print('excitation energy: ', ex_states[state])
+        zero_mu_n = v[:,0].transpose().conj().dot(fermi_dipole_mo_op[2].dot(v[:,state]))
+        n_mu_zero = v[:,state].transpose().conj().dot(fermi_dipole_mo_op[2].dot(v[:,0]))
+        print('zero_mu_n: ', zero_mu_n)
+        print('n_mu_zero: ', n_mu_zero)
+         
         print('polarizability: ', polar)
         print('OS: ', OS)
 
@@ -324,10 +334,10 @@ def test(prop_list):
 
 if __name__== "__main__":
     results = test(['polar', 'optrot'])
-    #print('results: ', results)
-    #np.savetxt('h2_fci_sos.txt', results)
-    output = open('h2_2_fci_sos.dat', 'wb')
-    pickle.dump(results, output) # converts array to binary and writes to output
-    input_ = open('h2_2_fci_sos.dat', 'rb')
-    results = pickle.load(input_) # Reads 
-    print('results after reading: ', results)
+    print('results: ', results)
+    ##np.savetxt('h2_fci_sos.txt', results)
+    #output = open('h2_2_fci_sos.dat', 'wb')
+    #pickle.dump(results, output) # converts array to binary and writes to output
+    #input_ = open('h2_2_fci_sos.dat', 'rb')
+    #results = pickle.load(input_) # Reads 
+    #print('results after reading: ', results)

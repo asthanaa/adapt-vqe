@@ -19,11 +19,11 @@ from scipy import linalg
 import pickle
 
 def test(prop_list):
-    dist = np.arange(0.2,2.70,0.1)
-    #dist = [0.7]
+    #dist = np.arange(0.2,2.70,0.1)
+    dist = [0.7]
     results = []
     for r in dist:
-        geometry = [('H', (0,0,0)), ('H', (0,0,1*r))]
+        #geometry = [('H', (0,0,0)), ('H', (0,0,1*r))]
         #geometry = '''
         #           H
         #           H 1 {0}
@@ -31,12 +31,12 @@ def test(prop_list):
         #           H 3 {0} 1 {2} 2 {3}
         #           '''.format(0.75, 1.5, 90.0, 60.0)
    
-        #geometry = '''
-        #           H            0.000000000000    -0.750000000000    -0.324759526419
-        #           H           -0.375000000000    -0.750000000000     0.324759526419
-        #           H            0.000000000000     0.750000000000    -0.324759526419
-        #           H            0.375000000000     0.750000000000     0.324759526419
-        #           '''
+        geometry = '''
+                   H            0.000000000000    -0.750000000000    -0.324759526419
+                   H           -0.375000000000    -0.750000000000     0.324759526419
+                   H            0.000000000000     0.750000000000    -0.324759526419
+                   H            0.375000000000     0.750000000000     0.324759526419
+                   '''
 
         charge = 0
         spin = 0
@@ -274,8 +274,10 @@ def test(prop_list):
                     term = 0
                     for i in range(len(op)):
                         coeff_i = ex_data[state][0][i]
-                        mat1 = fermi_dipole_mo_op[x].dot(op[i])*coeff_i
-                        term += qeom.expvalue(v.transpose().conj(),mat1,v)[0,0]
+                        #mat1 = fermi_dipole_mo_op[x].dot(op[i])*coeff_i
+                        #term += qeom.expvalue(v.transpose().conj(),mat1,v)[0,0]
+                        mat1 = bar_dipole_mo[x].dot(op[i])*coeff_i
+                        term += qeom.expvalue(reference_ket.transpose().conj(),mat1,reference_ket)[0,0]
                     OS[x].append(term)
                     OS_tmp[x].append((term, ex_energies[state]))
             else:
@@ -410,8 +412,8 @@ def test(prop_list):
 if __name__== "__main__":
     results = test(['polar', 'optrot'])
     print('results: ', results)
-    output = open('h2_scqeom.dat', 'wb')
-    pickle.dump(results, output) # converts array to binary and writes to output
-    input_ = open('h2_scqeom.dat', 'rb')
-    results = pickle.load(input_) # Reads 
-    print('results after reading: ', results)
+    #output = open('h2_scqeom.dat', 'wb')
+    #pickle.dump(results, output) # converts array to binary and writes to output
+    #input_ = open('h2_scqeom.dat', 'rb')
+    #results = pickle.load(input_) # Reads 
+    #print('results after reading: ', results)
