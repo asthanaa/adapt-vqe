@@ -20,7 +20,7 @@ import pickle
 
 def test(prop_list):
     dist = np.arange(0.2,2.70,0.1)
-    #dist = [0.7]
+    dist = [0.7]
     results = []
     for r in dist:
         geometry = [('H', (0,0,0)), ('H', (0,0,1*r))]
@@ -31,12 +31,12 @@ def test(prop_list):
         #           H 3 {0} 1 {2} 2 {3}
         #           '''.format(0.75, 1.5, 90.0, 60.0)
    
-        #geometry = '''
-        #           H            0.000000000000    -0.750000000000    -0.324759526419
-        #           H           -0.375000000000    -0.750000000000     0.324759526419
-        #           H            0.000000000000     0.750000000000    -0.324759526419
-        #           H            0.375000000000     0.750000000000     0.324759526419
-        #           '''
+        geometry = '''
+                   H            0.000000000000    -0.750000000000    -0.324759526419
+                   H           -0.375000000000    -0.750000000000     0.324759526419
+                   H            0.000000000000     0.750000000000    -0.324759526419
+                   H            0.375000000000     0.750000000000     0.324759526419
+                   '''
 
         charge = 0
         spin = 0
@@ -149,7 +149,7 @@ def test(prop_list):
         final_total_energies = ex_energies+e
         print('final total energies (adapt in qiskit ordering)', final_total_energies)
         #print('M: ', M)
-        #print('V: ', V)
+        print('V: ', V)
         #print('eigenvec gs: ', aval[0])
         #print('eigenvec es1: ', aval[1])
         #print('eigenvec es2: ', aval[2])
@@ -334,34 +334,42 @@ def test(prop_list):
         eig_val,eig_vec=scipy.linalg.eig(M,V)
         ex_energies =  eig_val.real
         print('ex_energies: ', ex_energies)
+        print('eig_vec: ', eig_vec)
         ex_data = []
         for i in range(len(ex_energies)):
             ex_data.append([eig_vec[:,i]])
 
 
-        OS = {}
+        OS_plus = {}
         num_OS_states = len(ex_energies)
-        OS_tmp = {}
+        OS_minus = {}
 
         for x in range(3):
             shape0 = fermi_dipole_mo_op[x].shape[0]
-            OS[x] = []
-            OS_tmp[x] = []
+            OS_plus[x] = []
+            OS_minus[x] = []
             is_all_zero = True
             if shape0 > 1:
                 is_all_zero = False
             if not is_all_zero:
                 for state in range(num_OS_states):
-                    term = 0
+                    term1 = 0
+                    term2 = 0
                     for i in range(len(op)):
                         coeff_i = ex_data[state][0][i]
                         mat1 = fermi_dipole_mo_op[x].dot(op[i])*coeff_i
-                        term += qeom.expvalue(v.transpose().conj(),mat1,v)[0,0]
-                    OS[x].append(term)
-                    OS_tmp[x].append((term, ex_energies[state]))
+                        term1 += qeom.expvalue(v.transpose().conj(),mat1,v)[0,0]
+                        mat1 = fermi_dipole_mo_op[x].dot(op[i].transpose().conj())*coeff_i
+                        term2 += qeom.expvalue(v.transpose().conj(),mat1,v)[0,0]
+                    #OS_plus[x].append(term1)
+                    OS_plus[x].append((term1, ex_energies[state]))
+                    OS_minus[x].append((term2, ex_energies[state]))
+                    #OS[x].append(term2)
+                    #OS_tmp[x].append((term2, ex_energies[state]))
             else:
                 for state in range(num_OS_states):
-                    OS[x].append(0.0)
+                    OS_plus[x].append((0.0, ex_energies[state]))
+                    OS_minus[x].append((0.0, ex_energies[state]))
                     #OS[x].append(np.zeros(num_OS_states))
 
         '''
@@ -376,13 +384,21 @@ def test(prop_list):
             print(items)
         '''
 
+        print(OS_plus[0])
+
         OS_final = []
         for state in range(num_OS_states):
-            termx = OS[0][state]
-            termy = OS[1][state]
-            termz = OS[2][state]
-            term =  2.0/3.0 * ex_energies[state] * (termx**2 + termy**2 + termz**2)
-            OS_final.append((term, ex_energies[state]))
+            termx = OS_plus[0][state][0]
+            termy = OS_plus[1][state][0]
+            termz = OS_plus[2][state][0]
+            print('termx, termy, termz: ', termx, termy, termz)
+            termx_1 = OS_minus[0][state][0]
+            termy_1 = OS_minus[1][state][0]
+            termz_1 = OS_minus[2][state][0]
+            print('termx, termy, termz: ', termx_1, termy_1, termz_1)
+            term1 =  2.0/3.0 * ex_energies[state] * (termx**2 + termy**2 + termz**2)
+            term2 =  2.0/3.0 * ex_energies[state] * (termx_1**2 + termy_1**2 + termz_1**2)
+            OS_final.append((term1 + term2, ex_energies[state]))
 
         OS_final = sorted(OS_final, key=lambda x: x[1])
         print('OS_final: ', OS_final)
@@ -481,18 +497,24 @@ def test(prop_list):
         temp = {}
         temp['polarizability'] = polar
         temp['isotropic_polarizability'] = 1/3.0 * (polar['XX'] + polar['YY'] + polar['ZZ'])
-        temp['rotation(589nm)'] = optrot
-        temp['trace_rotation(589nm)'] = optrot['XX'] + optrot['YY'] + optrot['ZZ']
         temp['OS'] = OS_final
-        temp['RS'] = RS_final
+        if 'optrot' in prop_list:
+            temp['rotation(589nm)'] = optrot
+            temp['trace_rotation(589nm)'] = optrot['XX'] + optrot['YY'] + optrot['ZZ']
+            temp['RS'] = RS_final
+        else:
+            temp['rotation(589nm)'] = 0
+            temp['trace_rotation(589nm)'] = 0
+            temp['RS'] = 0 
         results.append(temp)
     return results
 
 if __name__== "__main__":
-    results = test(['polar', 'optrot'])
+    #results = test(['polar', 'optrot'])
+    results = test(['polar'])
     print('results: ', results)
-    output = open('h2_qse.dat', 'wb')
-    pickle.dump(results, output) # converts array to binary and writes to output
-    input_ = open('h2_qse.dat', 'rb')
-    results = pickle.load(input_) # Reads 
-    print('results after reading: ', results)
+    #output = open('h2_qse.dat', 'wb')
+    #pickle.dump(results, output) # converts array to binary and writes to output
+    #input_ = open('h2_qse.dat', 'rb')
+    #results = pickle.load(input_) # Reads 
+    #print('results after reading: ', results)
