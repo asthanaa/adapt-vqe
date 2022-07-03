@@ -231,11 +231,13 @@ def test(prop_list):
                     final_rhs[i]= qeom.expvalue(reference_ket.transpose().conj(),mat,reference_ket)[0,0].real
             rhs_vec_dip_xyz.append(final_rhs)
             print('final_rhs: ', final_rhs)
-            final_rhs_one = 2*omega*final_rhs
+            #final_rhs_one = 2*omega*final_rhs
+            final_rhs_one = 2*Hmat.dot(final_rhs)
             x_minus_x_dag = linalg.solve(Hmat_sq, final_rhs_one) 
             # x + xdag = Hmat * (x - xdag)/omega
-            x_plus_x_dag = Hmat.dot(x_minus_x_dag)/omega
-            x_plus_x_dag_dip_xyz.append(x_plus_x_dag)
+            #x_plus_x_dag = Hmat.dot(x_minus_x_dag)/omega
+            #x_plus_x_dag_dip_xyz.append(x_plus_x_dag)
+            x_plus_x_dag_dip_xyz.append(x_minus_x_dag)
 
 
         cart = ['X', 'Y', 'Z']

@@ -242,15 +242,15 @@ def test(prop_list):
         # < UCC | [Y, Qi] | UCC > --> < HF | [Ybar, Qi] | HF >
         rhs_vec_dip_xyz = []
         x_plus_x_dag_dip_xyz = []
-
         ''' 
         # one equation rather than two
-        # (Hmat^2 - omega^2*V)(x - x^dag) = rhs
+        # (Hmat^2 - omega^2*V*V)(x - x^dag) = rhs
         #Hmat_sq = Hmat.dot(Hmat)
         Hmat = M.dot(M)
         omega_sq = omega * omega
         ##Hmat_sq -= omega_sq * identity
-        Hmat -= omega_sq * V 
+        #Hmat -= omega_sq * V  # should be V squared
+        Hmat -= omega_sq * V.dot(V)  # should be V squared
         
         for x in range(3):
             final_rhs = np.zeros((len(op)))
@@ -261,12 +261,22 @@ def test(prop_list):
                     #final_rhs[i]= qeom.expvalue(reference_ket.transpose().conj(),mat,reference_ket)[0,0].real
                     final_rhs[i]= qeom.expvalue(v.transpose().conj(),mat,v)[0,0].real
             rhs_vec_dip_xyz.append(final_rhs)
-            final_rhs_one = 2*omega*final_rhs
+            #final_rhs_one = 2*omega*final_rhs
+            final_rhs_one = 2*M.dot(final_rhs)
             x_minus_x_dag = linalg.solve(Hmat, final_rhs_one) 
             # x + xdag = Hmat * (x - xdag)/omega
-            #x_plus_x_dag = Hmat.dot(x_minus_x_dag)/omega
-            x_plus_x_dag = M.dot(x_minus_x_dag)/omega
-            x_plus_x_dag_dip_xyz.append(x_plus_x_dag)
+            #x_plus_x_dag = M.dot(x_minus_x_dag)/omega
+            #x_plus_x_dag_dip_xyz.append(x_plus_x_dag)
+            x_plus_x_dag_dip_xyz.append(x_minus_x_dag)
+        polar = {}
+        cart = ['X', 'Y', 'Z']
+        for x in range(3):
+            for y in range(3):
+                key = cart[x] + cart[y]
+                polar[key] = rhs_vec_dip_xyz[x].dot(x_plus_x_dag_dip_xyz[y])
+
+        print('final polarizability: ', polar)
+
         '''
         #   negative omega!
         Hmat = M - omega * V
@@ -403,29 +413,72 @@ def test(prop_list):
 
         OS_final = sorted(OS_final, key=lambda x: x[1])
         print('OS_final: ', OS_final)
-
-
+        x_plus_x_dag_dip_xyz = []
         if 'optrot' in prop_list:
+            #   negative omega!
+            Hmat = M - omega * V
+            for x in range(3):
+                final_rhs = np.zeros((len(op)))
+                if not isinstance(final_angmom_op[x], list):
+                    for i in range(len(op)):
+                        mat = final_angmom_op[x].dot(op[i])
+                        final_rhs[i]= qeom.expvalue(v.transpose().conj(),mat,v)[0,0].real
+                print('final_rhs: ', final_rhs)
+                x_plus_x_dag = linalg.solve(Hmat, final_rhs) 
+                x_plus_x_dag_dip_xyz.append(x_plus_x_dag)
+
+            optrot_minus = {}
+            for x in range(3):
+                for y in range(3):
+                    key = cart[x] + cart[y]
+                    optrot_minus[key] = rhs_vec_dip_xyz[x].dot(x_plus_x_dag_dip_xyz[y])
+        
+            x_plus_x_dag_dip_xyz = []
+
+            # positive omega
+            Hmat = M + omega * V
+            for x in range(3):
+                final_rhs = np.zeros((len(op)))
+                if not isinstance(final_angmom_op[x], list):
+                    for i in range(len(op)):
+                        mat = final_angmom_op[x].dot(op[i])
+                        final_rhs[i]= qeom.expvalue(v.transpose().conj(),mat,v)[0,0].real
+                print('final_rhs: ', final_rhs)
+                x_plus_x_dag = linalg.solve(Hmat, final_rhs) 
+                x_plus_x_dag_dip_xyz.append(x_plus_x_dag)
+
+            optrot_plus = {}
+            for x in range(3):
+                for y in range(3):
+                    key = cart[x] + cart[y]
+                    optrot_plus[key] = rhs_vec_dip_xyz[x].dot(x_plus_x_dag_dip_xyz[y])
+            optrot = {}
+            for x in range(3):
+                for y in range(3):
+                    key = cart[x] + cart[y]
+                    optrot[key] = optrot_minus[key] - optrot_plus[key] 
+            print('optrot_plus: ', optrot_plus)
+            print('optrot_minus: ', optrot_minus)
+            print('optrot: ', optrot)
+            '''
             Hmat = M.dot(M)
             omega_sq = omega * omega
             ##Hmat_sq -= omega_sq * identity
-            Hmat -= omega_sq * V 
+            Hmat -= omega_sq * V.dot(V)
             rhs_vec_angmom_xyz = []
             x_minus_x_dag_angmom_xyz = []
 
             # one equation rather than two
-            # (Hmat^2 - omega^2*I)(x - x^dag) = rhs
+            # (Hmat^2 - omega^2*V*V)(x - x^dag) = rhs
             
             for x in range(3):
                 final_rhs = np.zeros((len(op)))
                 if not isinstance(final_angmom_op[x], list):
                     for i in range(len(op)):
-                        #mat = qeom.comm2(final_angmom_op[x], op[i])
                         mat = final_angmom_op[x].dot(op[i])
-                        #final_rhs[i]= qeom.expvalue(reference_ket.transpose().conj(),mat,reference_ket)[0,0].real
                         final_rhs[i]= qeom.expvalue(v.transpose().conj(),mat,v)[0,0].real
                 rhs_vec_angmom_xyz.append(final_rhs)
-                final_rhs_one = 2*omega*final_rhs
+                final_rhs_one = 2*omega*V.dot(final_rhs)
                 x_minus_x_dag = linalg.solve(Hmat, final_rhs_one) 
                 x_minus_x_dag_angmom_xyz.append(x_minus_x_dag)
             optrot = {}
@@ -434,6 +487,7 @@ def test(prop_list):
                     key = cart[x] + cart[y]
                     optrot[key] = rhs_vec_dip_xyz[x].dot(x_minus_x_dag_angmom_xyz[y])
             print('optrot: ', optrot)
+            '''
 
             #print('rhs_vec_dip_xyz :', rhs_vec_dip_xyz[0])
             #print('x_plus_x_dag_dip_xyz :', x_plus_x_dag_dip_xyz[0])

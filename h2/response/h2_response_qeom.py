@@ -549,8 +549,8 @@ def test(prop_list):
     return results
 
 if __name__== "__main__":
-    #results = test(['polar', 'optrot'])
-    results = test(['polar'])
+    results = test(['polar', 'optrot'])
+    #results = test(['polar'])
     print('results: ', results)
     #output = open('h2_qeom.dat', 'wb')
     #pickle.dump(results, output) # converts array to binary and writes to output
