@@ -302,8 +302,10 @@ def test(prop_list):
                 if not isinstance(fermi_dipole_mo_op[2], list) and not isinstance(fermi_angmom_mo_op[2], list):
                     term_muz  =  v[:,0].transpose().conj().dot(fermi_dipole_mo_op[2].dot(v[:,state]))
                     term_Lz   =  v[:,state].transpose().conj().dot(fermi_angmom_mo_op[2].dot(v[:,0])) 
-
+               
+                print('ex_energy, term_mux, term_Lx: ', ex_states[state], term_mux, term_Lx)
                 term =  term_mux*term_Lx + term_muy*term_Ly + term_muz*term_Lz
+                #term =  term_mux*term_Lx 
                 #RS.append((term, np.abs(np.round(S2_states[state],3)), ex_states[state]))
                 RS.append((term, ex_states[state]))
 

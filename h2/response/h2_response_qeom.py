@@ -249,10 +249,6 @@ def test(prop_list):
          
 
         print('number of eigenstates: ', len(ex_energies))
-        #print('eig_val: ', eig_val)
-        #print('eig_vec: ', eig_vec[0])
-        #print('new_eig_vec: ', new_eig_vec)
-        #print('ex_energies: ', ex_energies)
         ex_data = []
         ex_data_neg = []
         size_ex_energies = len(ex_energies)
@@ -260,10 +256,7 @@ def test(prop_list):
             if ex_energies[i] < 0:
                 ex_data_neg.append((ex_energies[i], [new_eig_vec[i]]))
                 ex_data.append((ex_energies[size_ex_energies-i-1], [new_eig_vec[size_ex_energies-i-1]]))
-            #print(ex_energies[i])
 
-        #print('ex_data_neg: ', ex_data_neg)
-        #print('ex_data: ', ex_data)
         num_OS_states = len(ex_data)
 
         print('plus minus') 
@@ -279,43 +272,23 @@ def test(prop_list):
             if shape0 > 1:
                 is_all_zero = False
             if not is_all_zero:
-                print('x:: ', x)
                 for state in range(num_OS_states):
                     ex_energy = ex_data[state][0]
-                    #if ex_energy > 0:
                     print('ex_energy: ', ex_energy)
                     term = 0
                     for i in range(2*len(op)):
                         coeff_i = ex_data[state][1][0][i]
                         if i < len(op):
-                            #mat1 = fermi_dipole_mo_op[x].dot(op[i])*coeff_i
-                            #mat1 = fermi_dipole_mo_op[x].dot(op[i].transpose().conj())*coeff_i
                             mat1 = op[i].dot(fermi_dipole_mo_op[x])*coeff_i
                             temp = qeom.expvalue(v.transpose().conj(),mat1,v)[0,0]
                             term += temp	
-                            #print(' smaller state op term: ', state, i, temp)
-                            #print('coeff_i: ', coeff_i)
                         else:
-                            #mat1 = fermi_dipole_mo_op[x].dot(op[i- len(op)].transpose().conj())*coeff_i
-                            #mat2 = fermi_dipole_mo_op[x].dot(op[i- len(op)])*coeff_i
-                            #mat1 = op[i-len(op)].dot(fermi_dipole_mo_op[x])*coeff_i
                             mat1 = op[i-len(op)].transpose().conj().dot(fermi_dipole_mo_op[x])*coeff_i
                             temp = qeom.expvalue(v.transpose().conj(),mat1,v)[0,0]
-                            #temp = qeom.expvalue(v.transpose().conj(),mat2,v)[0,0]
-                            #term += qeom.expvalue(v.transpose().conj(),mat1,v)[0,0]
-                            #mat1 = fermi_dipole_mo_op[x].dot(op[i- len(op)])*coeff_i
-                            #temp = qeom.expvalue(v.transpose().conj(),mat1,v)[0,0]
                             term += temp	
-                            #print('greater state op term: ', state, i, temp)
-                            #print('coeff_i: ', coeff_i)
-                            #print('term_expt: ', temp)
-                    #OS[x].append((term, np.round(ex_data[state][0], 4)))     
                     OS[x].append(term)     
             else:
                 for state in range(num_OS_states):
-                    #ex_energy = ex_data[state][0]
-                    #print('ex_energy: ', ex_energy)
-                    #if ex_energy > 0:
                     OS[x].append(0.0)
 
         ############################################################################################
@@ -338,27 +311,15 @@ def test(prop_list):
                             mat1 = fermi_dipole_mo_op[x].dot(op[i])*coeff_i
                             temp = qeom.expvalue(v.transpose().conj(),mat1,v)[0,0]
                             term += temp	
-                            #print(' smaller state op term: ', state, i, temp)
-                            #print('coeff_i: ', coeff_i)
                         else:
                             mat1 = fermi_dipole_mo_op[x].dot(op[i- len(op)].transpose().conj())*coeff_i
                             temp = qeom.expvalue(v.transpose().conj(),mat1,v)[0,0]
                             term += temp	
-                            #print('greater state op term: ', state, i, temp)
-                            #print('coeff_i: ', coeff_i)
                     OS_neg[x].append(term)     
             else:
                 for state in range(num_OS_states):
-                    #ex_energy = ex_data[state][0]
-                    #print('ex_energy: ', ex_energy)
-                    #if ex_energy > 0:
                     OS_neg[x].append(0.0)
 
-        #OS_final = OS
-        #OS_final = OS
-        #for i in range(len(op)):
-        # mu_z
-        # fix state and mu_z 
         '''
         op_exc = []
         op_de_exc = []
@@ -413,7 +374,9 @@ def test(prop_list):
             termx = 0.5 * (termx_plus + termx_minus)
             termy = 0.5 * (termy_plus + termy_minus)
             termz = 0.5 * (termz_plus + termz_minus)
-            print(' + termx, termy, termz: ', termx, termy, termz)
+            print('ex_energy: ', np.round(ex_data[state][0], 4))
+            print(' + termx, termy, termz: ', termx_plus, termy_plus, termz_plus)
+            print(' - termx, termy, termz: ', termx_minus, termy_minus, termz_minus)
             term =  2.0/3.0 * ex_data[state][0] * (termx**2 + termy**2 + termz**2)
             OS_plus.append((term, np.round(ex_data[state][0], 4)))
 
@@ -457,15 +420,9 @@ def test(prop_list):
                     optrot[key] = -1.0 * rhs_vec_dip_xyz[x].dot(response_amp_angmom_xyz[y])
             print('optrot: ', optrot) 
 
-            '''
-            print('rhs_vec_dip_xyz: ', rhs_vec_dip_xyz[0])
-            print('response_amp_dip_xyz: ',  response_amp_dip_xyz[0])
-            print('rhs_vec_angmom_xyz: ', rhs_vec_angmom_xyz[0])
-            print('response_amp_angmom_xyz: ',  response_amp_angmom_xyz[0])
-            '''
    
             RS = {}
-            num_RS_states = len(ex_energies)
+            num_RS_states = len(ex_data)
 
             for x in range(3):
                 shape0_mu = fermi_dipole_mo_op[x].shape[0]
@@ -483,55 +440,108 @@ def test(prop_list):
                         for i in range(2*len(op)):
                             coeff_i = ex_data[state][1][0][i]
                             if i < len(op):
-                                mat1 = fermi_dipole_mo_op[x].dot(op[i])*coeff_i
-                                term_mu -= qeom.expvalue(v.transpose().conj(),mat1,v)[0,0]
-                                mat1 = fermi_angmom_mo_op[x].dot(op[i])*coeff_i
-                                term_L -= qeom.expvalue(v.transpose().conj(),mat1,v)[0,0]
+                                mat1 = op[i].dot(fermi_dipole_mo_op[x])*coeff_i
+                                #mat1 = fermi_dipole_mo_op[x].dot(op[i])*coeff_i
+                                term_mu += qeom.expvalue(v.transpose().conj(),mat1,v)[0,0]
+                                #mat1 = fermi_angmom_mo_op[x].dot(op[i])*coeff_i
+                                mat1 = op[i].dot(fermi_angmom_mo_op[x])*coeff_i
+                                term_L += qeom.expvalue(v.transpose().conj(),mat1,v)[0,0]
                             else:
-                                mat1 = fermi_dipole_mo_op[x].dot(op[i-len(op)].transpose().conj())*coeff_i
-                                term_mu -= qeom.expvalue(v.transpose().conj(),mat1,v)[0,0]
-                                mat1 = fermi_angmom_mo_op[x].dot(op[i-len(op)].transpose().conj())*coeff_i
-                                term_L -= qeom.expvalue(v.transpose().conj(),mat1,v)[0,0]
+                                mat1 = op[i-len(op)].transpose().conj().dot(fermi_dipole_mo_op[x])*coeff_i
+                                #mat1 = fermi_dipole_mo_op[x].dot(op[i-len(op)].transpose().conj())*coeff_i
+                                term_mu += qeom.expvalue(v.transpose().conj(),mat1,v)[0,0]
+                                #mat1 = fermi_angmom_mo_op[x].dot(op[i-len(op)].transpose().conj())*coeff_i
+                                mat1 = op[i-len(op)].transpose().conj().dot(fermi_angmom_mo_op[x])*coeff_i
+                                term_L += qeom.expvalue(v.transpose().conj(),mat1,v)[0,0]
                         RS[x].append((term_mu, term_L, ex_data[state][0]))
                 else:
                     for state in range(num_RS_states):
                         RS[x].append((0,0,ex_data[state][0]))
 
+            #for x in range(3):
+            #    RS[x] = sorted(RS[x], key=lambda x: x[2])
+
+            print('RS[0]: ', RS[0])
+            RS_neg = {}
             for x in range(3):
-                RS[x] = sorted(RS[x], key=lambda x: x[2])
+                shape0_mu = fermi_dipole_mo_op[x].shape[0]
+                shape0_L = 1
+                if not isinstance(fermi_angmom_mo_op[x], list):
+                    shape0_L =  fermi_angmom_mo_op[x].shape[0]
+                RS_neg[x] = []
+                is_all_zero = True
+                if shape0_mu > 1 and shape0_L > 1:
+                    is_all_zero = False
+                if not is_all_zero:
+                    for state in range(num_RS_states):
+                        term_mu = 0
+                        term_L = 0
+                        for i in range(2*len(op)):
+                            coeff_i = ex_data_neg[state][1][0][i]
+                            if i < len(op):
+                                mat1 = fermi_dipole_mo_op[x].dot(op[i])*coeff_i
+                                #mat1 = op[i].dot(fermi_dipole_mo_op[x])*coeff_i
+                                term_mu += qeom.expvalue(v.transpose().conj(),mat1,v)[0,0]
+                                #mat1 = op[i].dot(fermi_angmom_mo_op[x])*coeff_i
+                                mat1 = fermi_angmom_mo_op[x].dot(op[i])*coeff_i
+                                term_L += qeom.expvalue(v.transpose().conj(),mat1,v)[0,0]
+                            else:
+                                #mat1 = op[i-len(op)].transpose().conj().dot(fermi_dipole_mo_op[x])*coeff_i
+                                mat1 = fermi_dipole_mo_op[x].dot(op[i-len(op)].transpose().conj())*coeff_i
+                                term_mu += qeom.expvalue(v.transpose().conj(),mat1,v)[0,0]
+                                #mat1 = op[i-len(op)].transpose().conj().dot(fermi_angmom_mo_op[x])*coeff_i
+                                mat1 = fermi_angmom_mo_op[x].dot(op[i-len(op)].transpose().conj())*coeff_i
+                                term_L += qeom.expvalue(v.transpose().conj(),mat1,v)[0,0]
+                        RS_neg[x].append((term_mu, term_L, ex_data[state][0]))
+                else:
+                    for state in range(num_RS_states):
+                        RS_neg[x].append((0,0,ex_data_neg[state][0]))
 
-
+            print('RS_neg[0]: ', RS_neg[0])
             RS_plus_minus = []
             for state in range(num_RS_states):
 
                 ex_energy = np.round(RS[0][state][2], 4)
-                #print('ex_energy: ', ex_energy)
-                term_mux = RS[0][state][0]
-                term_Lx = RS[0][state][1]
+                print('ex_energy: ', ex_energy)
+                term_mux_1 = RS[0][state][0]
+                term_Lx_1 = RS[0][state][1]
 
-                term_muy = RS[1][state][0]
-                term_Ly = RS[1][state][1]
+                term_muy_1 = RS[1][state][0]
+                term_Ly_1 = RS[1][state][1]
 
-                term_muz = RS[2][state][0]
-                term_Lz = RS[2][state][1]
+                term_muz_1 = RS[2][state][0]
+                term_Lz_1 = RS[2][state][1]
 
-                #print('term_mux: ', term_mux)
-                #print('term_muy: ', term_muy)
-                #print('term_muz: ', term_muz)
-                #print('term_Lx: ', term_Lx)
-                #print('term_Ly: ', term_Ly)
-                #print('term_Lz: ', term_Lz)
+                term_mux_2 = RS_neg[0][state][0]
+                term_Lx_2 = RS_neg[0][state][1]
 
-                term =  -1.0*(term_mux*term_Lx + term_muy*term_Ly + term_muz*term_Lz)
+                term_muy_2 = RS_neg[1][state][0]
+                term_Ly_2 = RS_neg[1][state][1]
+
+                term_muz_2 = RS_neg[2][state][0]
+                term_Lz_2 = RS_neg[2][state][1]
+             
+                term_mux = 0.5 * (term_mux_1 + term_mux_2) 
+                term_muy = 0.5 * (term_muy_1 + term_muy_2) 
+                term_muz = 0.5 * (term_muz_1 + term_muz_2) 
+
+                term_Lx = 0.5 * (term_Lx_1 - term_Lx_2) 
+                term_Ly = 0.5 * (term_Ly_1 - term_Ly_2) 
+                term_Lz = 0.5 * (term_Lz_1 - term_Lz_2) 
+
+                #print('term_mux, term_muy, term_muz, term_Lx, term_Ly, term_Lz: ', term_mux, term_muy, term_muz, term_Lx, term_Ly, term_Lz)
+                #print('term_mux_1, term_muy_1, term_muz_1, term_Lx_1, term_Ly_1, term_Lz_1: ', term_mux_1, term_muy_1, term_muz_1, term_Lx_1, term_Ly_1, term_Lz_1)
+
+                term =  term_mux*term_Lx + term_muy*term_Ly + term_muz*term_Lz
                 RS_plus_minus.append((term, np.round(RS[0][state][2], 4)))
 
             RS_plus_minus = sorted(RS_plus_minus, key=lambda x: x[1])
 
-            RS_final = []
-            for i in range(int(num_RS_states/2)):
-                RS = RS_plus_minus[i][0] - RS_plus_minus[num_OS_states-i-1][0]
-                RS_final.append((RS, abs(RS_plus_minus[i][1])))
-            RS_final = sorted(RS_final, key=lambda x: x[-1])
+            #RS_final = []
+            #for i in range(int(num_RS_states/2)):
+            #    RS = RS_plus_minus[i][0] - RS_plus_minus[num_OS_states-i-1][0]
+            #    RS_final.append((RS, abs(RS_plus_minus[i][1])))
+            RS_final = sorted(RS_plus_minus, key=lambda x: x[-1])
             print('RS_final: ', RS_final)
         temp = {}
         temp['polarizability'] = polar

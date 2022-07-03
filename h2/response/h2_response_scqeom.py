@@ -358,24 +358,28 @@ def test(prop_list):
                         term_L = 0
                         for i in range(len(op)):
                             coeff_i = ex_data[state][0][i]
-                            mat1 = fermi_dipole_mo_op[x].dot(op[i])*coeff_i
-                            term_mu += qeom.expvalue(v.transpose().conj(),mat1,v)[0,0]
-                            mat1 = fermi_angmom_mo_op[x].dot(op[i])*coeff_i
-                            term_L += qeom.expvalue(v.transpose().conj(),mat1,v)[0,0]
+                            #mat1 = fermi_dipole_mo_op[x].dot(op[i])*coeff_i
+                            #term_mu += qeom.expvalue(v.transpose().conj(),mat1,v)[0,0]
+                            mat1 = bar_dipole_mo[x].dot(op[i])*coeff_i
+                            term_mu += qeom.expvalue(reference_ket.transpose().conj(),mat1,reference_ket)[0,0]
+                            #mat1 = fermi_angmom_mo_op[x].dot(op[i])*coeff_i
+                            #term_L += qeom.expvalue(v.transpose().conj(),mat1,v)[0,0]
+                            mat1 = bar_angmom_mo[x].dot(op[i])*coeff_i
+                            term_L += qeom.expvalue(reference_ket.transpose().conj(),mat1,reference_ket)[0,0]
+                        #if x == 0:
+                        #    print('ex_energy, term_mux, term_Lx: ', ex_energies[state], term_mu, term_L)
                         RS[x].append((term_mu, term_L, ex_energies[state]))
                 else:
                     for state in range(num_RS_states):
                         RS[x].append((0,0,ex_energies[state]))
 
-            
-            for x in range(3):
-                RS[x] = sorted(RS[x], key=lambda x: x[2]) 
+            ''' 
+            #for x in range(3):
+            #    RS[x] = sorted(RS[x], key=lambda x: x[2]) 
            
-            '''
             print('RS[0]\n')
             for items in RS[0]:
                 print(items)
-
             print('RS[1]\n')
             for items in RS[1]:
                 print(items)
