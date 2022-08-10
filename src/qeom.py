@@ -11,6 +11,27 @@ import scipy.sparse.linalg
 
 import openfermion
 from openfermion import *
+
+
+def wfgr(parameters,opmats,ref):
+        """
+        Prepare Psi_ex:
+        exp{A1}exp{A2}exp{A3}...exp{An}|0>
+        """
+        wf=ref
+        for k in range(0, len(parameters)):
+            wf = scipy.sparse.linalg.expm_multiply((1*parameters[k]*opmats[k]), wf)
+        return wf
+#TODO: reverse order of multiplication of Unitaries below
+def wfex(parameters,opmats,op,ref):
+        """
+        Prepare Psi_ex:
+        exp{A1}exp{A2}exp{A3}...exp{An}*Operator*|0>
+        """
+        wf=op.dot(ref)
+        for k in range(0, len(parameters)):
+            wf = scipy.sparse.linalg.expm_multiply((1*parameters[k]*opmats[k]), wf)
+        return wf
 def barH(parameters,opmats,H):
         """
         Prepare barH:
@@ -300,6 +321,9 @@ def createops_basic(no,nia,nib,nva,nvb,reference_ket):
     for item in ops:    
         spmat_ops.append(transforms.get_sparse_operator(item, n_qubits = nia+nib+nva+nvb))
     return spmat_ops
+
+
+
 def createops_ip(no,nia,nib,nva,nvb,reference_ket):
     #single excitation
     ops=[]
@@ -318,12 +342,12 @@ def createops_ip(no,nia,nib,nva,nvb,reference_ket):
             ops.append(optmp4)
         #correct only for h2 sto3g
 
-        for j in range(nia):
-            ja=2*j
-            jb=2*j+1
-            optmp5= FermionOperator(((ia,0),(jb,0)),norm)
-            optmp5 = normal_ordered(optmp5)
-            ops.append(optmp5)
+        #for j in range(nia):
+        #    ja=2*j
+        #    jb=2*j+1
+        #    optmp5= FermionOperator(((ia,0),(jb,0)),norm)
+        #    optmp5 = normal_ordered(optmp5)
+        #    ops.append(optmp5)
     for i in range(0,nia):
         ia = 2*i
         ib = 2*i+1
@@ -345,9 +369,13 @@ def createops_ip(no,nia,nib,nva,nvb,reference_ket):
                         optmp = normal_ordered(optmp)
                         ops.append(optmp)
     spmat_ops = []
+    #print("len of op count",len(ops))
+    #exit()
     for item in ops:    
         spmat_ops.append(transforms.get_sparse_operator(item, n_qubits = nia+nib+nva+nvb))
     return spmat_ops
+
+
 def createops_ipfull(no,nia,nib,nva,nvb,reference_ket):
     #single excitation
     ops=[]
@@ -416,6 +444,8 @@ def createops_ipfull(no,nia,nib,nva,nvb,reference_ket):
     for item in ops:    
         spmat_ops.append(transforms.get_sparse_operator(item, n_qubits = nia+nib+nva+nvb))
     return spmat_ops
+
+
 
 def createops_eafull(no,nia,nib,nva,nvb,reference_ket):
     #single excitation
@@ -490,6 +520,7 @@ def createops_eafull(no,nia,nib,nva,nvb,reference_ket):
         spmat_ops.append(transforms.get_sparse_operator(item, n_qubits = nia+nib+nva+nvb))
     return spmat_ops
 
+
 def createops_ea(no,nia,nib,nva,nvb,reference_ket):
     #single excitation
     ops=[]
@@ -509,12 +540,12 @@ def createops_ea(no,nia,nib,nva,nvb,reference_ket):
             ops.append(optmp3)
             ops.append(optmp4)
         #2e ea (for H2 sto3g, add more for others)
-        for k in range(nva):
-            ba=nia+nib+2*k
-            bb=nia+nib+2*k+1
-            optmp5 = FermionOperator(((aa,1),(bb,1)),norm)
-            optmp5 = normal_ordered(optmp5)
-            ops.append(optmp5)
+        #for k in range(nva):
+        #    ba=nia+nib+2*k
+        #    bb=nia+nib+2*k+1
+        #    optmp5 = FermionOperator(((aa,1),(bb,1)),norm)
+        #    optmp5 = normal_ordered(optmp5)
+        #    ops.append(optmp5)
             
 
     for i in range(0,nia):
@@ -551,6 +582,7 @@ def createops_eefullwithI(no,nia,nib,nva,nvb,reference_ket):
     singlet=1
     triplet=1
     norm=1
+
     optmp= FermionOperator('')
     optmp = normal_ordered(optmp)
     ops.append(optmp)
@@ -631,6 +663,430 @@ def createops_eefullwithI(no,nia,nib,nva,nvb,reference_ket):
                         optmp = normal_ordered(optmp)                           
                         ops.append(optmp)
                         optmp =  FermionOperator(((bb,1),(aa,1),(ja,0),(ib,0)), norm)
+                        optmp = normal_ordered(optmp)                           
+                        ops.append(optmp)
+
+    spmat_ops = []
+    for item in ops:    
+        spmat_ops.append(transforms.get_sparse_operator(item, n_qubits = nia+nib+nva+nvb))
+    return spmat_ops
+
+def createops_eafullwithI(no,nia,nib,nva,nvb,reference_ket):
+    #single excitation
+    ops=[]
+    singlet=1
+    triplet=1
+    norm=1
+    optmp= FermionOperator('')
+    optmp = normal_ordered(optmp)
+    ops.append(optmp)
+    for j in range(nva):
+
+        aa=nia+nib+2*j
+        ab=nia+nib+2*j+1
+        optmp3= FermionOperator((aa,1),norm)
+        optmp3 = normal_ordered(optmp3)
+        ops.append(optmp3)
+        optmp4= FermionOperator((ab,1),norm)
+        optmp4 = normal_ordered(optmp4)
+        ops.append(optmp4)
+        #2e ea (for H2 sto3g, add more for others)
+        #for k in range(nva):
+        #    ba=nia+nib+2*k
+        #bb=nia+nib+2*k+1
+        #optmp5 = FermionOperator(((aa,1),(bb,1)),norm)
+        #optmp5 = normal_ordered(optmp5)
+        #ops.append(optmp5)
+            
+
+    for i in range(0,nia):
+        ia = 2*i
+        ib = 2*i+1
+
+
+        for a in range(0,nva):
+            aa = nia+nib + 2*a
+            ab = nia+nib + 2*a+1
+
+            for b in range(a,nva):
+                ba = nia+nib + 2*b
+                bb = nia+nib + 2*b+1
+
+                if (a==b):
+                    optmp =  FermionOperator(((aa,1),(bb,1),(ib,0)), norm)
+                    optmp = normal_ordered(optmp)
+                    ops.append(optmp)
+                    optmp =  FermionOperator(((aa,1),(bb,1),(ia,0)), norm)
+                    optmp = normal_ordered(optmp)
+                    ops.append(optmp)
+                else:
+                        optmp =  FermionOperator(((aa,1),(ba,1),(ia,0)), norm)
+                        optmp = normal_ordered(optmp)
+                        ops.append(optmp)
+                        optmp =  FermionOperator(((ab,1),(bb,1),(ib,0)), norm)
+                        optmp = normal_ordered(optmp)
+                        ops.append(optmp)
+
+                        optmp =  FermionOperator(((ab,1),(ba,1),(ia,0)), norm)
+                        optmp = normal_ordered(optmp)                           
+                        ops.append(optmp)
+                        optmp =  FermionOperator(((ab,1),(ba,1),(ib,0)), norm)
+                        optmp = normal_ordered(optmp)                           
+                        ops.append(optmp)
+
+                        optmp =  FermionOperator(((aa,1),(bb,1),(ia,0)), norm)
+                        optmp = normal_ordered(optmp)                           
+                        ops.append(optmp)
+                        optmp =  FermionOperator(((aa,1),(bb,1),(ib,0)), norm)
+                        optmp = normal_ordered(optmp)                           
+                        ops.append(optmp)
+                    
+
+    spmat_ops = []
+    for item in ops:    
+        spmat_ops.append(transforms.get_sparse_operator(item, n_qubits = nia+nib+nva+nvb))
+    return spmat_ops
+def createops_ipfullwithI(no,nia,nib,nva,nvb,reference_ket):
+    #single excitation
+    ops=[]
+    singlet=1
+    triplet=1
+    norm=1
+    optmp= FermionOperator('')
+    optmp = normal_ordered(optmp)
+    ops.append(optmp)
+    for i in range(nia):
+        ia=2*i
+        ib=2*i+1
+        optmp= FermionOperator(((ia,0)),norm)
+        optmp = normal_ordered(optmp)
+        ops.append(optmp)
+        optmp= FermionOperator(((ib,0)),norm)
+        optmp = normal_ordered(optmp)
+        ops.append(optmp)
+        #for j in range(nia):
+        #    ja=2*j
+        #    jb=2*j+1
+        #    optmp= FermionOperator(((ia,0),(jb,0)),norm)
+        #    optmp = normal_ordered(optmp)
+        #    ops.append(optmp)
+    for i in range(0,nia):
+        ia = 2*i
+        ib = 2*i+1
+
+        for j in range(i,nib):
+            ja = 2*j
+            jb = 2*j+1
+
+            for a in range(0,nva):
+                aa = nia+nib + 2*a
+                ab = nia+nib + 2*a+1
+
+                if (i==j):
+
+                        optmp =  FermionOperator(((ab,1),(jb,0),(ia,0)), norm)
+                        optmp = normal_ordered(optmp)
+                        ops.append(optmp)
+                        optmp =  FermionOperator(((aa,1),(jb,0),(ia,0)), norm)
+                        optmp = normal_ordered(optmp)
+                        ops.append(optmp)
+
+                else:
+                        optmp =  FermionOperator(((aa,1),(ja,0),(ia,0)), norm)
+                        optmp = normal_ordered(optmp)
+                        ops.append(optmp)
+                        optmp =  FermionOperator(((ab,1),(jb,0),(ib,0)), norm)
+                        optmp = normal_ordered(optmp)
+                        ops.append(optmp)
+
+                        optmp =  FermionOperator(((ab,1),(jb,0),(ia,0)), norm)
+                        optmp = normal_ordered(optmp)                           
+                        ops.append(optmp)
+                        optmp =  FermionOperator(((ab,1),(ja,0),(ib,0)), norm)
+                        optmp = normal_ordered(optmp)                           
+                        ops.append(optmp)
+
+                        optmp =  FermionOperator(((aa,1),(jb,0),(ia,0)), norm)
+                        optmp = normal_ordered(optmp)                           
+                        ops.append(optmp)
+                        optmp =  FermionOperator(((aa,1),(ja,0),(ib,0)), norm)
+                        optmp = normal_ordered(optmp)                           
+                        ops.append(optmp)
+
+    spmat_ops = []
+    for item in ops:    
+        spmat_ops.append(transforms.get_sparse_operator(item, n_qubits = nia+nib+nva+nvb))
+
+    return spmat_ops
+
+def createops_ipcomplete_h2b(no,nia,nib,nva,nvb,reference_ket):
+    #single excitation
+    ops=[]
+    singlet=1
+    triplet=1
+    norm=1
+    for i in range(0,nia+nib+nva+nvb,2):
+        ia=i
+        ib=i+1
+        if singlet:
+            optmp3= FermionOperator((ia,0),norm)
+            optmp3 = normal_ordered(optmp3)
+            optmp4= FermionOperator((ib,0),norm)
+            optmp4 = normal_ordered(optmp4)
+            ops.append(optmp3)
+            ops.append(optmp4)
+        #correct only for h2 sto3g
+
+    for i in range(0,nia+nib+nva+nvb,2):
+        ia = i
+        ib = i+1
+
+        for j in range(i,nia+nib+nva+nvb,2):
+            ja = j
+            jb = j+1
+
+            for a in range(0,nia+nib+nva+nvb,2):
+                if (a!=i) and (a!=j):
+                    aa = a
+                    ab = a+1
+
+                    if (i==j):
+                        if singlet:
+                            optmp =  FermionOperator(((ab,1),(jb,0),(ia,0)), norm)
+                            optmp = normal_ordered(optmp)
+                            ops.append(optmp)
+                            optmp =  FermionOperator(((aa,1),(jb,0),(ia,0)), norm)
+                            optmp = normal_ordered(optmp)
+                            ops.append(optmp)
+
+                elif (a!=i) and (a==j):
+                    aa = a
+                    ab = a+1
+
+                    if (i==j):
+                        if singlet:
+                            optmp =  FermionOperator(((aa,1),(jb,0),(ia,0)), norm)
+                            optmp = normal_ordered(optmp)
+                            ops.append(optmp)
+                            optmp =  FermionOperator(((ab,1),(ja,0),(ib,0)), norm)
+                            optmp = normal_ordered(optmp)
+                            ops.append(optmp)
+                elif (a!=j) and (a==i):
+                    aa = a
+                    ab = a+1
+
+                    if (i==j):
+                        if singlet:
+                            optmp =  FermionOperator(((ab,1),(jb,0),(ia,0)), norm)
+                            optmp = normal_ordered(optmp)
+                            ops.append(optmp)
+                            optmp =  FermionOperator(((aa,1),(ja,0),(ib,0)), norm)
+                            optmp = normal_ordered(optmp)
+                            ops.append(optmp)
+    spmat_ops = []
+    print("len of op count",len(ops))
+    for item in ops:    
+        spmat_ops.append(transforms.get_sparse_operator(item, n_qubits = nia+nib+nva+nvb))
+
+    return spmat_ops
+def createops_ipea(no,nia,nib,nva,nvb,reference_ket):
+    #single excitation
+    ops=[]
+    singlet=1
+    triplet=1
+    norm=1
+    for j in range(nva):
+
+        aa=nia+nib+2*j
+        ab=nia+nib+2*j+1
+        if singlet:
+            optmp3= FermionOperator((aa,1),norm)
+            optmp3 = normal_ordered(optmp3)
+            optmp4= FermionOperator((ab,1),norm)
+            optmp4 = normal_ordered(optmp4)
+            ops.append(optmp3)
+            ops.append(optmp4)
+
+    for i in range(0,nia):
+        ia = 2*i
+        ib = 2*i+1
+        for a in range(0,nva):
+            aa = nia+nib + 2*a
+            ab = nia+nib + 2*a+1
+
+            for b in range(0,nva):
+                ba = nia+nib + 2*b
+                bb = nia+nib + 2*b+1
+
+                if (i==j):
+                                if singlet:
+
+
+                                    optmp =  FermionOperator(((aa,1),(bb,1),(ib,0)), norm)
+                                    optmp = normal_ordered(optmp)
+                                    ops.append(optmp)
+                                    optmp =  FermionOperator(((aa,1),(bb,1),(ia,0)), norm)
+                                    optmp = normal_ordered(optmp)
+                                    ops.append(optmp)
+
+    for i in range(nia):
+        ia=2*i
+        ib=2*i+1
+        if singlet:
+            optmp3= FermionOperator((ia,0),norm)
+            optmp3 = normal_ordered(optmp3)
+            optmp4= FermionOperator((ib,0),norm)
+            optmp4 = normal_ordered(optmp4)
+            ops.append(optmp3)
+            ops.append(optmp4)
+    for i in range(0,nia):
+        ia = 2*i
+        ib = 2*i+1
+
+        for j in range(i,nia):
+            ja = 2*j
+            jb = 2*j+1
+
+            for a in range(0,nva):
+                aa = nia+nib + 2*a
+                ab = nia+nib + 2*a+1
+
+                if (i==j):
+                    if singlet:
+                        optmp =  FermionOperator(((ab,1),(jb,0),(ia,0)), norm)
+                        optmp = normal_ordered(optmp)
+                        ops.append(optmp)
+                        optmp =  FermionOperator(((aa,1),(jb,0),(ia,0)), norm)
+                        optmp = normal_ordered(optmp)
+                        ops.append(optmp)
+    spmat_ops = []
+    for item in ops:    
+        spmat_ops.append(transforms.get_sparse_operator(item, n_qubits = nia+nib+nva+nvb))
+    return spmat_ops
+
+def createops_ipeafull(no,nia,nib,nva,nvb,reference_ket):
+    #single excitation
+    ops=[]
+    singlet=1
+    triplet=1
+    norm=1
+    for j in range(nva):
+
+        aa=nia+nib+2*j
+        ab=nia+nib+2*j+1
+        optmp3= FermionOperator((aa,1),norm)
+        optmp3 = normal_ordered(optmp3)
+        ops.append(optmp3)
+        optmp4= FermionOperator((ab,1),norm)
+        optmp4 = normal_ordered(optmp4)
+        ops.append(optmp4)
+        #2e ea (for H2 sto3g, add more for others)
+        #for k in range(nva):
+        #    ba=nia+nib+2*k
+        #bb=nia+nib+2*k+1
+        #optmp5 = FermionOperator(((aa,1),(bb,1)),norm)
+        #optmp5 = normal_ordered(optmp5)
+        #ops.append(optmp5)
+            
+
+    for i in range(0,nia):
+        ia = 2*i
+        ib = 2*i+1
+
+
+        for a in range(0,nva):
+            aa = nia+nib + 2*a
+            ab = nia+nib + 2*a+1
+
+            for b in range(a,nva):
+                ba = nia+nib + 2*b
+                bb = nia+nib + 2*b+1
+
+                if (a==b):
+                    optmp =  FermionOperator(((aa,1),(bb,1),(ib,0)), norm)
+                    optmp = normal_ordered(optmp)
+                    ops.append(optmp)
+                    optmp =  FermionOperator(((aa,1),(bb,1),(ia,0)), norm)
+                    optmp = normal_ordered(optmp)
+                    ops.append(optmp)
+                else:
+                        optmp =  FermionOperator(((aa,1),(ba,1),(ia,0)), norm)
+                        optmp = normal_ordered(optmp)
+                        ops.append(optmp)
+                        optmp =  FermionOperator(((ab,1),(bb,1),(ib,0)), norm)
+                        optmp = normal_ordered(optmp)
+                        ops.append(optmp)
+
+                        optmp =  FermionOperator(((ab,1),(ba,1),(ia,0)), norm)
+                        optmp = normal_ordered(optmp)                           
+                        ops.append(optmp)
+                        optmp =  FermionOperator(((ab,1),(ba,1),(ib,0)), norm)
+                        optmp = normal_ordered(optmp)                           
+                        ops.append(optmp)
+
+                        optmp =  FermionOperator(((aa,1),(bb,1),(ia,0)), norm)
+                        optmp = normal_ordered(optmp)                           
+                        ops.append(optmp)
+                        optmp =  FermionOperator(((aa,1),(bb,1),(ib,0)), norm)
+                        optmp = normal_ordered(optmp)                           
+                        ops.append(optmp)
+                    
+
+    for i in range(nia):
+        ia=2*i
+        ib=2*i+1
+        optmp= FermionOperator(((ia,0)),norm)
+        optmp = normal_ordered(optmp)
+        ops.append(optmp)
+        optmp= FermionOperator(((ib,0)),norm)
+        optmp = normal_ordered(optmp)
+        ops.append(optmp)
+        #for j in range(nia):
+        #    ja=2*j
+        #    jb=2*j+1
+        #    optmp= FermionOperator(((ia,0),(jb,0)),norm)
+        #    optmp = normal_ordered(optmp)
+        #    ops.append(optmp)
+    for i in range(0,nia):
+        ia = 2*i
+        ib = 2*i+1
+
+        for j in range(i,nib):
+            ja = 2*j
+            jb = 2*j+1
+
+            for a in range(0,nva):
+                aa = nia+nib + 2*a
+                ab = nia+nib + 2*a+1
+
+                if (i==j):
+
+                        optmp =  FermionOperator(((ab,1),(jb,0),(ia,0)), norm)
+                        optmp = normal_ordered(optmp)
+                        ops.append(optmp)
+                        optmp =  FermionOperator(((aa,1),(jb,0),(ia,0)), norm)
+                        optmp = normal_ordered(optmp)
+                        ops.append(optmp)
+
+                else:
+                        optmp =  FermionOperator(((aa,1),(ja,0),(ia,0)), norm)
+                        optmp = normal_ordered(optmp)
+                        ops.append(optmp)
+                        optmp =  FermionOperator(((ab,1),(jb,0),(ib,0)), norm)
+                        optmp = normal_ordered(optmp)
+                        ops.append(optmp)
+
+                        optmp =  FermionOperator(((ab,1),(jb,0),(ia,0)), norm)
+                        optmp = normal_ordered(optmp)                           
+                        ops.append(optmp)
+                        optmp =  FermionOperator(((ab,1),(ja,0),(ib,0)), norm)
+                        optmp = normal_ordered(optmp)                           
+                        ops.append(optmp)
+
+                        optmp =  FermionOperator(((aa,1),(jb,0),(ia,0)), norm)
+                        optmp = normal_ordered(optmp)                           
+                        ops.append(optmp)
+                        optmp =  FermionOperator(((aa,1),(ja,0),(ib,0)), norm)
                         optmp = normal_ordered(optmp)                           
                         ops.append(optmp)
 
