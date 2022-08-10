@@ -3,6 +3,7 @@ import vqe_methods
 import operator_pools
 import pyscf_helper 
 
+
 import pyscf
 from pyscf import lib
 from pyscf import gto, scf, mcscf, fci, ao2mo, lo,  cc
@@ -15,13 +16,14 @@ from tVQE import *
 import qeom
 from scipy.sparse.linalg import eigs
 def test():
-    r0 = 10.0
+    r0 = 1.5
+    r1=1.5
     geometry = '''
     H 0 0 0
     H 0 0 {0}
-    H 0 0 {1}
-    H 0 0 {2}
-    '''.format(r0,2*r0,3*r0)
+    H 0 {1} 0
+    H 0 {1} {0}
+    '''.format(r0,r1)
     charge = 0
     spin = 0
     basis = 'sto3g'
@@ -101,11 +103,11 @@ def test():
             mat=qeom.comm3(op[i].transpose().conj(),barH,op[j])
             #print(mat.toarray())
             Hmat[i,j]=qeom.expvalue(reference_ket.transpose().conj(),mat,reference_ket)[0,0].real
-            mat3=qeom.comm2(op[i].transpose().conj(),op[j])
-            V[i,j]=qeom.expvalue(reference_ket.transpose().conj(),mat3,reference_ket)[0,0]
+            #mat3=qeom.comm2(op[i].transpose().conj(),op[j])
+            #V[i,j]=qeom.expvalue(reference_ket.transpose().conj(),mat3,reference_ket)[0,0]
     #Diagonalize ex operator-> eigenvalues are excitation energies
     eig,aval=scipy.linalg.eig(Hmat)
-    print('V',V)
+    print('M',Hmat)
 
     print('final excitation energies',np.sort(eig.real))
     #print('final excitation energies',np.sort(eig.real)+e)

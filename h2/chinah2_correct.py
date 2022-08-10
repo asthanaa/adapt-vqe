@@ -89,6 +89,7 @@ def test():
     #solve 
     #print(v)
     #exit()
+    e_electronic = e - E_nuc
     M=np.zeros((len(op),len(op)))
     Q=np.zeros((len(op),len(op)))
     W=np.zeros((len(op),len(op)))
@@ -100,22 +101,29 @@ def test():
             #mat=op[i].transpose().conj().dot(barH.dot(op[j]))
             mat1=qeom.expvalue(op[i].transpose().conj(),hamiltonian,op[j])
             mat1=scipy.sparse.csr_matrix(mat1)
+            mat_expt=e_electronic * op[i].transpose().conj().dot(op[j])
             M[i,j]=qeom.expvalue(v.transpose().conj(),mat1,v)[0,0]
+            M[i,j]-=qeom.expvalue(v.transpose().conj(),mat_expt,v)[0,0]            
+            #M[i,j]=qeom.expvalue(v.transpose().conj(),mat1,v)[0,0]
             mat3=op[i].transpose().conj().dot(op[j])
-            V[i,j]=qeom.expvalue(v.transpose().conj(),mat3,v)[0,0]
+            temp1 = qeom.expvalue(v.transpose().conj(),op[j],v)[0,0]
+            temp2 = qeom.expvalue(v.transpose().conj(),op[i].transpose().conj(),v)[0,0]
+            temp = temp1 * temp2
+            V[i,j]=qeom.expvalue(v.transpose().conj(),mat3,v)[0,0] - temp
+            #V[i,j]=qeom.expvalue(v.transpose().conj(),mat3,v)[0,0]
             mat2=qeom.expvalue(op[i].transpose().conj(),hamiltonian,op[j].transpose().conj())
             mat2=scipy.sparse.csr_matrix(mat2)
-            Q[i,j]=-qeom.expvalue(v.transpose().conj(),mat2,v)[0,0]
+            #Q[i,j]=-qeom.expvalue(v.transpose().conj(),mat2,v)[0,0]
             mat4=op[i].transpose().conj().dot(op[j].transpose().conj())
-            W[i,j]=-qeom.expvalue(v.transpose().conj(),mat4,v)[0,0]
+            #W[i,j]=-qeom.expvalue(v.transpose().conj(),mat4,v)[0,0]
     Hmat=np.bmat([[M,Q],[Q.T.conj(),M.T.conj()]])
     S=np.bmat([[V,W],[-W.T.conj(),-V.T.conj()]])
     eig,aval=scipy.linalg.eig(Hmat,S)
 
-    print('W',W)
-    print('V',V)
-    print('final excitation energies',np.sort(eig.real)-E_nuc)
-    print('eigenvector 1st',aval[0])
+    #print('W',W)
+    #print('V',V)
+    print('final excitation energies',np.sort(eig.real))
+    #print('eigenvector 1st',aval[0])
     #print('FCI excitation energies',fci_levels.real)
 if __name__== "__main__":
     test()

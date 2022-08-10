@@ -110,7 +110,7 @@ def test():
     eig,aval=scipy.linalg.eig(Hmat,S)
     print('S',S)
     print('final excitation energies',np.sort(eig.real)+e)
-    print('eigenvalue',aval[0])
+    print("is orthogonal?",v.conjugate().transpose().todense(),aval)
     #print('FCI excitation energies',fci_levels.real)
 if __name__== "__main__":
     test()

@@ -74,7 +74,7 @@ def test():
     #fci_levels=a+E_nuc
 
     #create operators single and double for each excitation
-    op=qeom.createops_eafull(n_orb,n_a,n_b,n_orb-n_a,n_orb-n_b,reference_ket)
+    op=qeom.createops_ipfullwithI(n_orb,n_a,n_b,n_orb-n_a,n_orb-n_b,reference_ket)
     #print('op[0] is',op[0])
     #exit()
 
@@ -101,7 +101,7 @@ def test():
             V[i,j]=qeom.expvalue(v.transpose().conj(),mat3,v)[0,0]
     eig,aval=scipy.linalg.eig(M,V)
     #print('V',V)
-    print('final excitation energies',(np.sort(eig.real)+E_nuc-e)*27.2114)
+    print('final excitation energies',(np.sort(eig.real)+E_nuc-e))
     #print('eigenvector 1st',aval[0])
     #print('FCI excitation energies',fci_levels.real)
 if __name__== "__main__":

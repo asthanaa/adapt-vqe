@@ -17,7 +17,7 @@ import qeom
 from scipy.sparse.linalg import eigs
 
 def test():
-    r =2.0
+    r =0.7
     geometry = [('H', (0,0,0)), ('H', (0,0,1*r))]
 
 
@@ -74,7 +74,7 @@ def test():
     print(" <S^2> of final state  : %12.8f" %(v.conj().T.dot(s2.dot(v))[0,0].real))
 
     #create operators single and double for each excitation
-    op=qeom.createops_basic(n_orb,n_a,n_b,n_orb-n_a,n_orb-n_b,reference_ket)
+    op=qeom.createops_eefull(n_orb,n_a,n_b,n_orb-n_a,n_orb-n_b,reference_ket)
     #print('op[0] is',op[0])
 
     #transform H with e^{sigma}
@@ -100,10 +100,14 @@ def test():
             mat3=op[i].transpose().conj().dot(op[j])
             V[i,j]=qeom.expvalue(v.transpose().conj(),mat3,v)[0,0]
     eig,aval=scipy.linalg.eig(M,V)
-    print('V',V)
 
+    print('M',M)
+    print('V',V)
+    print(E_nuc,e)
     print('final excitation energies',np.sort(eig.real)+E_nuc)
     print('final excited states',np.sort(eig.real)+E_nuc-e)
+
+    print("is orthogonal?",v.conjugate().transpose().todense(),aval)
     #print('eigenvector 1st',aval[0])
 
     #print('FCI excitation energies',fci_levels.real)

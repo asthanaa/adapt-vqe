@@ -17,7 +17,7 @@ from scipy.sparse.linalg import eigs
 
 def test():
     r0 = 1.5
-    r1 = 10
+    r1 = 100
     geometry = '''
     H 0 0   0
     H 0 0  {0}
@@ -83,7 +83,7 @@ def test():
     #fci_levels=a+E_nuc
 
     #create operators single and double for each excitation
-    op=qeom.createops_eefull(n_orb,n_a,n_b,n_orb-n_a,n_orb-n_b,reference_ket)
+    op=qeom.createops_eefullwithI(n_orb,n_a,n_b,n_orb-n_a,n_orb-n_b,reference_ket)
     #print('op[0] is',op[0])
     #exit()
 
