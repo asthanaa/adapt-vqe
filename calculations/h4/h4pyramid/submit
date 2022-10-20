@@ -1,0 +1,158 @@
+#! /usr/bin/env python
+import os, re, time, sys
+import subprocess as sp
+from optparse import OptionParser
+def ParseInput(ArgsIn):
+   UseMsg='''
+   Submits jobs to PBS
+   EJS 20090603
+   Submits jobs to SLURM
+   NM 20140305
+   Submits python jobs to SLURM
+   LWB 20210805'''
+   parser=OptionParser(usage=UseMsg)
+   parser.add_option('-o','--output',dest='output',type='str',help='This is the output file name. Default = infile -.in/inp/xyz/py +.out')
+   parser.add_option('-e','--error',dest='error',type='str',help='This is the error file name. Default = infile -.in/inp/xyz/py +.err')
+   parser.add_option('--env', dest='environment', type='str',help='This is the name of the conda environment that needs to be sourced, if any. No default.')
+   parser.add_option('-c','--checkpoint',dest='checkpoint',type='str',help='Local path (must be referenced from submission directory) to old scratch directory for restart')
+   parser.add_option('-d','--dryrun',dest='dryrun',action="store_true",default=False,help='Just creates the script file rather than running it')
+   parser.add_option('-s','--scratch',dest='scratch',type='str',help='Use this scratch on the remote machine. Default = infile with the submission time appended to the end')
+   parser.add_option('-p','--parallel',dest='parallel',type='int',help='Runs a parallel qchem instead of serial using this number of processors. Default = 1')
+   parser.add_option('-H','--host',dest='host',type='str',help='Specifies the specific host to run the job on. tc***')
+   parser.add_option('-n','--name',dest='name',type='str',help='Specifies the name of the script file. Default = infile.sh')
+   parser.add_option('-l','--time',dest='walltime',help="Specifies walltime. Default = 7 days. Use is '-l time=10:00:00'")
+   parser.add_option('-q','--queue',type='str',default='',help="Specifies the main queue (mhg or jcap) to use")
+   parser.add_option('-a','--specificqueue',type='str',default='mhg_m256',help="Specifies the specific queue (mhg_m256,mhg_m512) to use")
+   parser.add_option('-m','--memory',type='str',default='',help="Memory per node. No default")
+   parser.add_option('-Q','--qchem',type='str',default='',help="Specifies a file to source before running")
+   parser.add_option('--ppn',dest='ppn',type='int',help="Number of cores to reserve for the job. Default = 1")
+   parser.add_option('--save',dest='save_scratch',action='store_true',help="Keep the scratch files on the node on which the job was running")
+   parser.add_option('--copyfiles',action='append',help="Copy these files from the job's scratch directory to the local scratchdirectory",default=[])
+   parser.add_option('-t','--paralleltype',type='str',default='openmpi',help="Choose either openmp or openmpi. openmpi is the default.")
+   parser.add_option('-i','--ignore',dest='ignore',type='str',action='append',default=None,help='Not submitting to specific queues (need to be appended one by one)')
+   parser.add_option('--exclude',dest='exclude',type='str',action='store',default=None,help='Not submitting to specific nodes (using "," as delimiter) e.g. --exclude n0001.mhg0,n0010.mhg0')
+   options,args=parser.parse_args(ArgsIn)
+   if len(args)<2:
+      print("Input file must be specified.")
+      parser.print_help()
+      sys.exit(1)
+   else:
+      return options,args
+options,args=ParseInput(sys.argv)
+for infile in args[1:]:
+   if not os.path.exists(infile):
+      print("Input file "+infile+" doesn't exist.")
+      continue
+   scriptfile = infile+'.sh'
+   theTime = time.strftime("%Y%m%d%H%M%S")
+   strPBS = ''
+   if options.name:
+      strPBS += '#SBATCH --job-name='+str(options.name)+'\n'
+   else:
+      strPBS += '#SBATCH --job-name='+str(scriptfile)+'\n'
+   if options.walltime:
+      strPBS += '#SBATCH --'+str(options.walltime)+'\n'
+   else:
+      strPBS += '#SBATCH --time=144:00:00\n'
+   user = os.path.expandvars('$USER')
+   if options.queue:
+      queue = str(options.queue)
+   else:
+      queue = 'normal_q'
+   strPBS += '#SBATCH --partition='+queue+'\n'
+   strPBS += '#SBATCH --account=nmayhall_group\n'
+   strPBS += '#SBATCH --nodes=1\n'
+   if options.exclude:
+      strPBS += '#SBATCH --exclude='+str(options.exclude)+'\n'
+   if options.host:
+      strPBS += '#SBATCH --nodelist='+str(options.host)+'\n'
+   comment1="""
+   if (options.ppn and options.parallel):
+      if options.ppn >= options.parallel:
+         #strPBS += '#SBATCH --ntasks-per-node='+str(options.ppn)+'\n'
+      else:
+         #strPBS += '#SBATCH --ntasks-per-node='+str(options.parallel)+'\n'
+   elif (options.ppn==None and options.parallel):
+      options.ppn = options.parallel
+      #strPBS += '#SBATCH --ntasks-per-node='+str(options.parallel)+'\n'
+   elif (options.ppn and options.parallel==None):
+      options.parallel = 1
+      #strPBS += '#SBATCH --ntasks-per-node='+str(options.ppn)+'\n'
+   else:
+      options.ppn = 1
+      options.parallel = 1
+      #strPBS += '#SBATCH --ntasks-per-node=1\n'
+   """
+   if options.memory:
+      strPBS += '#SBATCH --mem='+str(options.memory)+'\n'
+   if options.output:
+      outfile = options.output
+   else:
+      outfile = infile.replace('.in','').replace('.inp','').replace('.xyz','').replace('.py','')+'.out'
+   if options.error:
+      errorfile = options.error
+   else:
+      errorfile = infile.replace('.in','').replace('.inp','').replace('.xyz','').replace('.py','')+'.err'
+   strPBS += '#SBATCH --output='+errorfile+'\n'
+   strPBS += '#SBATCH --error='+errorfile+'\n'
+   strPBS += 'hostname > '+errorfile+'\n'
+   if options.scratch:
+      scratch = options.scratch
+   else:
+      scratch = infile
+   comment1 ="""
+   if options.parallel > 1:
+      if options.paralleltype == 'openmpi':
+         qchemstr = 'qchem -save -np ' + str(options.parallel) + ' '
+      elif options.paralleltype == 'openmp':
+         qchemstr = 'qchem -save -nt ' + str(options.parallel) + ' '
+      else:
+         print("Choose either openmp or openmpi. The default is openmpi.")
+         sys.exit(2)
+   else:
+      qchemstr = 'qchem -save '
+   """
+   user = os.path.expandvars('$USER')
+   #localCWD = '$HOME' + '/' + os.getcwd().split('/'+user+'/')[-1]
+   localCWD = os.getcwd()
+   #localCWD = os.getcwd().split('/'+user+'/')[-1]
+   #QCSCRATCH = os.path.expandvars('$QCSCRATCH')
+   sf = open(scriptfile,'w')
+   redirectionOp = ' > '
+   sf.write('#!/bin/bash\n')
+   sf.write(strPBS)
+   sf.write('\n')
+   sf.write('source /home/$USER/.bashrc\n')
+   sf.write('\n')
+   if options.environment:
+      sf.write('source activate ' + options.environment + '\n\n')
+   sf.write('cd $TMPDIR\n')
+   scratch += theTime
+   sf.write('mkdir ' + scratch + '\n')
+   #if options.checkpoint:
+   #   sf.write('cp '+localCWD+'/'+options.checkpoint+'/* '+scratch+'/\n')
+   #for i in range(0,options.parallel):
+   #   sf.write('cp -r '+scratch+' '+scratch+'.'+str(i)+'/\n')
+#   sf.write('cp '+localCWD+'/'+infile+' .\n')
+   sf.write('cp '+localCWD+'/'+infile+' '+infile+'\n')
+   #qchemstr += infile+theTime+'qchem'+' '+outfile+theTime+' '+scratch+redirectionOp+errorfile+theTime
+   pythonstr = 'nohup python ' + infile + redirectionOp + outfile + theTime  
+   sf.write(pythonstr+'\n')
+   for fl in options.copyfiles:
+      if ':' in fl:
+         (fl1,fl2)=fl.split(':')
+         fl2=localCWD+'/'+fl2
+      else:
+         fl1=fl
+         fl2=localCWD
+      sf.write('cp -R '+'$QCSCRATCH/'+scratch+'/'+fl1+' '+fl2+'\n')
+   sf.write('cp '+outfile+theTime+' '+localCWD+'/'+outfile+'\n')
+   sf.write('cat '+errorfile+theTime+' >> '+localCWD+'/'+errorfile+'\n')
+   if not options.save_scratch:
+      sf.write('rm -rf '+scratch+'*\n')
+      sf.write('rm  '+infile+'*\n')
+      sf.write('rm '+outfile+theTime+'\n')
+      sf.write('rm '+errorfile+theTime+'\n')
+   sf.close()
+   if not options.dryrun:
+      sp.call(['sbatch', scriptfile])
