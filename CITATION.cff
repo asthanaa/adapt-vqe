@@ -3,8 +3,7 @@
 
 cff-version: 1.2.0
 title: Adapt-VQE
-message: >-If you use this software, please cite it using the metadata from this file.
-type: software
+message: "If you use this software, please cite it using the metadata from this file."
 authors:
 - given-names: Ayush
   family-names: Asthana
@@ -21,4 +20,5 @@ authors:
   name-particle: J
   email: nmayhall@vt.edu
   affiliation: Virginia Tech
-
+doi: 10.48550/arXiv.2206.10502
+url: "https://github.com/asthanaa/adapt-vqe"
