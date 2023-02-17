@@ -110,7 +110,9 @@ def test():
     eig,aval=scipy.linalg.eig(M,V)
 
     print('M',list(M))
+
     print('V',list(V))
+    print('condition V',np.linalg.cond(V))
 
     print('final excitation energies',(np.sort(eig.real)+E_nuc))
     #print('eigenvector 1st',aval[0])

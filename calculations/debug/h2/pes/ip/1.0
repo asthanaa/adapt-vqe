@@ -1,0 +1,83 @@
+ ---------------------------------------------------------
+                                                          
+                      Using Pyscf:
+                                                          
+ ---------------------------------------------------------
+                                                          
+converged SCF energy = -1.06610864931794
+
+System and Method:
+[('H', (0, 0, 0)), ('H', (0, 0, 1.0))]
+Basis set                                      :       sto3g
+Number of Orbitals                             :         2
+Number of electrons                            :         2
+Nuclear Repulsion                              :    0.5291772109 
+Electronic SCF energy                          :   -1.5952858602 
+SCF Energy                                     :   -1.0661086493
+ AO->MO
+ NElectrons:    1    1
+ ecore:   0.00000000
+ ERIs in the active-space:
+(2, 2, 2, 2)    0.00012800 Mb
+ n_orb:    2
+ n_a  :    1
+ n_b  :    1
+ HF Energy:  -1.06610865
+ Build reference state with    1 alpha and    1 beta electrons [0, 1]
+ State    0:  -1.10115033 au  <S2>:   0.00000000
+ Form singlet GSD operators
+ Number of operators:  4
+           (1' 0  ) : 00 11 00 11 
+     (0' 0' 1  0  ) : 1010 0110 1010 1001 
+     (0' 0' 1  1  ) : 1010 1010 
+     (1' 0' 1  1  ) : 1010 1001 1010 0110 
+ Reference Energy:  -1.06610865
+ Generate Sparse Matrices for operators in pool
+ Start ADAPT-VQE algorithm
+ Now start to grow the ansatz
+
+
+
+
+ --------------------------------------------------------------------------
+                         ADAPT-VQE iteration:  0
+ --------------------------------------------------------------------------
+ Check each new operator for coupling
+ Measure Operator Pool Gradients:
+ Variance:      0.03872653
+ Uncertainty:   0.19679058
+    2   0.27830391      (0' 0' 1  1  ) : 1010 1010 
+ Norm of <[H,A]> =   0.27830391
+ Max  of <[H,A]> =   0.27830391
+ Add operator    2
+ Iter:   0 Current Energy =  -1.1006678708460946 Gradient Norm    3.3e-02 Gradient Max    3.3e-02
+ Iter:   1 Current Energy =  -1.1011501648709556 Gradient Norm    6.1e-04 Gradient Max    6.1e-04
+ Iter:   2 Current Energy =  -1.1011503302326062 Gradient Norm    1.7e-07 Gradient Max    1.7e-07
+ Iter:   3 Current Energy =  -1.1011503302326191 Gradient Norm    1.6e-14 Gradient Max    1.6e-14
+ Finished:      -1.101150330233
+ -----------New ansatz----------- 
+    #        Coeff               Term
+    0  -0.24921109      (0' 0' 1  1  ) : 1010 1010 
+
+
+
+
+ --------------------------------------------------------------------------
+                         ADAPT-VQE iteration:  1
+ --------------------------------------------------------------------------
+ Check each new operator for coupling
+ Measure Operator Pool Gradients:
+ Variance:      0.00000000
+ Uncertainty:   0.00000000
+ Norm of <[H,A]> =   0.00000000
+ Max  of <[H,A]> =   0.00000000
+ Ansatz Growth Converged!
+ Number of operators in ansatz:  1
+ *Finished:      -1.101150330233
+ -----------Final ansatz----------- 
+    #        Coeff               Term
+    0  -0.24921109      (0' 0' 1  1  ) : 1010 1010 
+ Final ADAPT-VQE energy:  -1.10115033
+ <S^2> of final state  :   0.00000000
+barH based energy diff=0? 5.551115123125783e-16
+final excited states [-0.58166697 -0.58166697 -0.05994379 -0.05994379]

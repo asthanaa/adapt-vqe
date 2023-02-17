@@ -1157,7 +1157,7 @@ def qse(op,hamiltonian,reference_ket,e,v,E_nuc):
         print("QSE   State %4i: %12.8f au Gap:%12.8f" %(ei,eig[ei]+E_nuc,eig[ei]+E_nuc-e))
 # }}}
 
-def sceom(op,barH,barS2,reference_ket,e):
+def sceomS2(op,barH,barS2,reference_ket,e):
 # {{{
     Hmat =np.zeros((len(op),len(op)))
     S2mat=np.zeros((len(op),len(op)))
@@ -1182,5 +1182,26 @@ def sceom(op,barH,barS2,reference_ket,e):
     for ei in range(len(eig)):
         S2 = aval[:,ei].conj().T.dot(S2mat.dot(aval[:,ei]))
         print("SCEOM State %4i: %12.8f au Gap:%12.8f <S2>: %12.8f" %(ei,eig[ei]+e,eig[ei],S2))
+# }}}
+
+def sceom(op,barH,reference_ket,e):
+# {{{
+    Hmat =np.zeros((len(op),len(op)))
+    #S2mat=np.zeros((len(op),len(op)))
+    for i in range(len(op)):
+        for j in range(len(op)):
+            #mat=op[i].transpose().conj().dot(barH.dot(op[j]))
+            mat=comm3(op[i].transpose().conj(),barH,op[j])
+            #s2mat=comm3(op[i].transpose().conj(),barS2,op[j])
+            Hmat[i,j] =expvalue(reference_ket.transpose().conj(),mat,reference_ket)[0,0].real
+            #S2mat[i,j]=expvalue(reference_ket.transpose().conj(),s2mat,reference_ket)[0,0].real
+    #Diagonalize ex operator-> eigenvalues are excitation energies
+    eig,aval=scipy.linalg.eig(Hmat)
+    #print('final excitation energies',np.sort(eig.real))
+    idx = eig.argsort()
+    eig = eig[idx]
+    aval = aval[:, idx]
+    return eig
+
 # }}}
 

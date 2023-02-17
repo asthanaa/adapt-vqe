@@ -1,0 +1,17 @@
+ ---------------------------------------------------------
+                                                          
+                      Using Pyscf:
+                                                          
+ ---------------------------------------------------------
+                                                          
+converged SCF energy = -1.31331178622042
+
+System and Method:
+[('H', (0, 0, 0)), ('H', (0, 0, 3.0)), ('H', (0, 0, 6.0)), ('H', (0, 0, 9.0))]
+Basis set                                      :      sto-3g
+Number of Orbitals                             :         4
+Number of electrons                            :         4
+Nuclear Repulsion                              :    0.7643670824 
+Electronic SCF energy                          :   -2.0776788687 
+SCF Energy                                     :   -1.3133117862
+ AO->MO

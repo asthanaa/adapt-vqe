@@ -22,8 +22,8 @@ from openfermion import *
 
 
 import pyscf_helper
-
-def ooadapt(hamiltonian_op, pool, reference_ket,
+import orbital_opt
+def ooadapt(no,nia,nib,nva,nvb,hamiltonian_op, pool, reference_ket,
         adapt_conver    = 'norm',
         adapt_thresh    = 1e-3,
         theta_thresh    = 1e-7,
@@ -48,7 +48,11 @@ def ooadapt(hamiltonian_op, pool, reference_ket,
     op_indices = []
     parameters = []
     curr_state = 1.0*reference_ket
-
+    singles =orbital_opt.ops_singlesGSD_unitary(no,nia,nib,nva,nvb)
+    par_s=[]
+    np.random.seed(42)
+    for i in range(len(singles)):
+        par_s.insert(0, np.random.random()/10)  #how to initialize the parameters?
     print(" Now start to grow the ansatz")
     for n_iter in range(0,adapt_maxiter):
 
@@ -60,10 +64,26 @@ def ooadapt(hamiltonian_op, pool, reference_ket,
         next_deriv = 0
         curr_norm = 0
 
+        min_options = {'gtol': theta_thresh, 'disp':False}
+       
+        #create effective Hamiltonian
+        hnew,par_s=orbopt(no,nia,nib,nva,nvb,curr_state,hamiltonian,min_options,singles,par_s)
+        print(hnew.dot(curr_state), hamiltonian.dot(curr_state))
+        exit()   
+
+
         print(" Check each new operator for coupling")
         next_term = []
         print(" Measure Operator Pool Gradients:")
-        sig = hamiltonian.dot(curr_state)
+
+        #sig = hamiltonian.dot(curr_state)
+        
+        #constuct sig using effective Hamiltonian
+        sig = hnew.dot(curr_state)
+        
+
+
+
         e_curr = curr_state.T.conj().dot(sig)[0,0]
         var = sig.T.conj().dot(sig)[0,0] - e_curr**2
         uncertainty = np.sqrt(var.real)
@@ -81,7 +101,7 @@ def ooadapt(hamiltonian_op, pool, reference_ket,
 
         curr_norm = np.sqrt(curr_norm)
 
-        min_options = {'gtol': theta_thresh, 'disp':False}
+
 
         max_of_gi = next_deriv
         print(" Norm of <[H,A]> = %12.8f" %curr_norm)
@@ -118,7 +138,9 @@ def ooadapt(hamiltonian_op, pool, reference_ket,
         #print('ansatz_mat',ansatz_mat[0].toarray())
         #exit()
 
-        trial_model = tUCCSD(hamiltonian, ansatz_mat, reference_ket, parameters)
+        #using new H
+        #trial_model = tUCCSD(hamiltonian, ansatz_mat, reference_ket, parameters)
+        trial_model = tUCCSD(hnew, ansatz_mat, reference_ket, parameters)
 
 
         opt_result = scipy.optimize.minimize(trial_model.energy, parameters, jac=trial_model.gradient,

@@ -1,0 +1,5 @@
+tc007
+qse.py:107: ComplexWarning: Casting complex values to real discards the imaginary part
+  M[i,j]=qeom.expvalue(v.transpose().conj(),mat1,v)[0,0]
+qse.py:109: ComplexWarning: Casting complex values to real discards the imaginary part
+  V[i,j]=qeom.expvalue(v.transpose().conj(),mat3,v)[0,0]
