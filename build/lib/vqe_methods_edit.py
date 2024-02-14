@@ -85,10 +85,12 @@ def adapt_vqe_me(hamiltonian_op, pool, reference_ket,
 
         #sys.stdout = file
         print("results of adapt, adapt+me[2], adapt+me[3], adapt+me[4], me[5], me[6], me[7], me[8]")
-        for i in range(n_iter):
+        for i in range(n_iter+1):
             print(i,e_curr_ad[i], e_curr_me2[i], e_curr_me3[i], e_curr_me4[i], e_curr_me5[i],  e_curr_me6[i], e_curr_me7[i], e_curr_me8[i])
         print("-----------------")
         #sys.stdout = sys.__stdout__
+        #exit()
+
 
         var = sig.T.conj().dot(sig)[0,0] - e_curr**2
         print(var.real)
@@ -123,7 +125,7 @@ def adapt_vqe_me(hamiltonian_op, pool, reference_ket,
                 converged = True
         else:
             print(" FAIL: Convergence criterion not defined")
-            exit()
+            #exit()
 
         if converged:
             print(" Ansatz Growth Converged!")
@@ -134,7 +136,7 @@ def adapt_vqe_me(hamiltonian_op, pool, reference_ket,
             for si in range(len(ansatz_ops)):
                 opstring = pool.get_string_for_term(ansatz_ops[si])
                 print(" %4i %12.8f %s" %(si, parameters[si], opstring) )
-                #exit()
+                exit()
             break
 
         print(" Add operator %4i" %next_index)

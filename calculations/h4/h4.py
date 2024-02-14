@@ -17,7 +17,7 @@ import qeom
 from scipy.sparse.linalg import eigs
 def test():
     r0 = 1.5
-    r1=1.5
+    r1=5.0
     geometry = '''
     H 0 0 0
     H 0 0 {0}
@@ -110,7 +110,7 @@ def test():
     print('M',Hmat)
 
     print('final excitation energies',np.sort(eig.real))
-    #print('final excitation energies',np.sort(eig.real)+e)
+    print('final excited states',np.sort(eig.real)+e)
     #print('FCI excitation energies',fci_levels.real)
     print('eigenvector',aval[0])
 if __name__== "__main__":

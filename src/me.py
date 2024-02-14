@@ -13,9 +13,11 @@ import scipy.sparse.linalg
 import openfermion
 from openfermion import *
 def me(order,H,trial):
-    delta = 1e-8
-    #
+    delta = 1e-15
+    flag=0
+    thresholding = 0
     M = np.zeros((order,order),dtype=float)
+
     Y = np.zeros(order,dtype=float)
     for i in range(0,order):
         Y[i] = (np.conj(trial).T@Hn(H,(2*order-i-1))@trial).real
@@ -25,26 +27,51 @@ def me(order,H,trial):
             else:
                 M[i,j] = M[j,i] = (np.conj(trial).T@trial).real
     #
+    print("det,delta,order\n", npla.det(M), delta,order) 
+    u,s,v = npla.svd(M)
     if abs(npla.det(M)) < delta:
-        # print('singlar encountered!')
+        print('singlarity encountered!')
         u,s,v = npla.svd(M)
-        for i in range(0,len(s)):
+        vp = np.copy(v)
+        for i in range(len(s)-1,-1,-1):
             if abs(s[i]) < delta:
-                if s[i] < 0:
-                    s[i] += -delta
+                if (thresholding==0):
+                    if s[i] < 0:
+                        #s[i] += -delta
+                        s[i] += 0
+                    else:
+                        #s[i] += delta
+                        s[i] += 0
+                #adding new thresholding
                 else:
-                    s[i] += delta
-        M = np.dot(u*s,v)
-    #
-    # print(M,-Y)
-    X = npla.solve(M,-Y)
-    coeff = np.zeros(order+1,dtype=float)
+                    vp = np.delete(vp,i,1)
+                flag=1
+        if flag==1 and thresholding==1:
+
+            print("old M :\n ", M)
+            print("old S :\n ", s)
+            Mp = np.dot(np.dot(vp.T,M),vp)
+            print("new M:\n ", Mp)
+            #u,s,v =npla.svd(Mp)
+            #print("new S : \n",s)
+            Yp = np.dot(Y,vp)
+            order_new = Yp.size
+            X = npla.solve(Mp,-Yp)
+        if flag ==1 and thresholding ==0:
+            M = np.dot(u*s,v)
+            X = npla.solve(M,-Y)
+    if flag==0 or thresholding==0:
+        X = npla.solve(M,-Y)
+        order_new = Y.size
+    coeff = np.zeros(order_new+1,dtype=float)
     coeff[0] = 1.0
     coeff[1:] = X
     roots = np.roots(coeff)
     roots = np.sort(roots)
-    # print(roots)
-    return roots[0]#,roots[1],M,X
+    print(roots)
+    #if flag==1:
+    #    exit()
+    return roots[0].real#,roots[1],M,X
  
 def Hn(Ham,i):
     tmp = np.copy(Ham)
