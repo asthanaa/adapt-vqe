@@ -56,6 +56,10 @@ def adapt_vqe_me(hamiltonian_op, pool, reference_ket,
     e_curr_me6 = np.zeros(100)
     e_curr_me7 = np.zeros(100)
     e_curr_me8 = np.zeros(100)
+    e_curr_me9 = np.zeros(100)
+    e_curr_me10 = np.zeros(100)
+    e_curr_me11 = np.zeros(100)
+    e_curr_me12 = np.zeros(100)
     curr_state = 1.0*reference_ket
 
     print(" Now start to grow the ansatz")
@@ -82,11 +86,15 @@ def adapt_vqe_me(hamiltonian_op, pool, reference_ket,
         e_curr_me6[n_iter]=me.me(6, hamiltonian.todense(),curr_state.todense())
         e_curr_me7[n_iter]=me.me(7, hamiltonian.todense(),curr_state.todense())
         e_curr_me8[n_iter]=me.me(8, hamiltonian.todense(),curr_state.todense())
+        e_curr_me9[n_iter]=me.me(9, hamiltonian.todense(),curr_state.todense())
+        e_curr_me10[n_iter]=me.me(10, hamiltonian.todense(),curr_state.todense())
+        e_curr_me11[n_iter]=me.me(11, hamiltonian.todense(),curr_state.todense())
+        e_curr_me12[n_iter]=me.me(12, hamiltonian.todense(),curr_state.todense())
 
         #sys.stdout = file
-        print("results of adapt, adapt+me[2], adapt+me[3], adapt+me[4], me[5], me[6], me[7], me[8]")
+        print("results of adapt, adapt+me[2], adapt+me[3], adapt+me[4], me[5], me[6], me[7], me[8] 9 10 11 12")
         for i in range(n_iter+1):
-            print(i,e_curr_ad[i], e_curr_me2[i], e_curr_me3[i], e_curr_me4[i], e_curr_me5[i],  e_curr_me6[i], e_curr_me7[i], e_curr_me8[i])
+            print(i,e_curr_ad[i], e_curr_me2[i], e_curr_me3[i], e_curr_me4[i], e_curr_me5[i],  e_curr_me6[i], e_curr_me7[i], e_curr_me8[i],e_curr_me9[i],  e_curr_me10[i], e_curr_me11[i], e_curr_me12[i])
         print("-----------------")
         #sys.stdout = sys.__stdout__
         #exit()

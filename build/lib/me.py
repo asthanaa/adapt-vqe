@@ -15,7 +15,7 @@ from openfermion import *
 def me(order,H,trial):
     delta = 1e-15
     flag=0
-    thresholding = 0
+    thresholding = 1 
     M = np.zeros((order,order),dtype=float)
 
     Y = np.zeros(order,dtype=float)
@@ -50,20 +50,19 @@ def me(order,H,trial):
 
             print("old M :\n ", M)
             print("old S :\n ", s)
-            Mp = np.dot(np.dot(vp.T,M),vp)
+            Mp = np.dot(np.dot(vp.conj().T,M),vp)
             print("new M:\n ", Mp)
-            #u,s,v =npla.svd(Mp)
-            #print("new S : \n",s)
-            Yp = np.dot(Y,vp)
+            Yp = np.dot(vp.conj().T,Y)
             order_new = Yp.size
             X = npla.solve(Mp,-Yp)
+            X = np.dot(vp,X)
         if flag ==1 and thresholding ==0:
             M = np.dot(u*s,v)
             X = npla.solve(M,-Y)
     if flag==0 or thresholding==0:
         X = npla.solve(M,-Y)
         order_new = Y.size
-    coeff = np.zeros(order_new+1,dtype=float)
+    coeff = np.zeros(order+1,dtype=float)
     coeff[0] = 1.0
     coeff[1:] = X
     roots = np.roots(coeff)
